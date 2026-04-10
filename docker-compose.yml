@@ -1,0 +1,167 @@
+services:
+  # ========================
+  # Infrastructure
+  # ========================
+  mysql_iam:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${IAM_DB_NAME:-legalflow_iam}
+      MYSQL_USER: ${IAM_DB_USER:-legalflow}
+      MYSQL_PASSWORD: ${IAM_DB_PASSWORD:-legalflow_secret}
+      MYSQL_ROOT_PASSWORD: ${IAM_DB_ROOT_PASSWORD:-root_secret}
+    volumes:
+      - mysql_iam_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mysql_documents:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${DOC_DB_NAME:-legalflow_documents}
+      MYSQL_USER: ${DOC_DB_USER:-legalflow}
+      MYSQL_PASSWORD: ${DOC_DB_PASSWORD:-legalflow_secret}
+      MYSQL_ROOT_PASSWORD: ${DOC_DB_ROOT_PASSWORD:-root_secret}
+    volumes:
+      - mysql_doc_data:/var/lib/mysql
+    ports:
+      - "3308:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ========================
+  # IAM Service
+  # ========================
+  iam_service:
+    build:
+      context: ./services/iam_service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py makemigrations iam &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8001"
+    volumes:
+      - ./services/iam_service:/app
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${IAM_DB_NAME:-legalflow_iam}
+      - DATABASE_USER=${IAM_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${IAM_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_iam
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=*
+    depends_on:
+      mysql_iam:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  iam_celery_worker:
+    build:
+      context: ./services/iam_service
+      dockerfile: Dockerfile
+    command: celery -A config worker -l info
+    volumes:
+      - ./services/iam_service:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${IAM_DB_NAME:-legalflow_iam}
+      - DATABASE_USER=${IAM_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${IAM_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_iam
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      mysql_iam:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ========================
+  # Document Service
+  # ========================
+  document_service:
+    build:
+      context: ./services/document_service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py makemigrations documents &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8002"
+    volumes:
+      - ./services/document_service:/app
+      - document_storage:/app/media/documents
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${DOC_DB_NAME:-legalflow_documents}
+      - DATABASE_USER=${DOC_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${DOC_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_documents
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - IAM_SERVICE_URL=http://iam_service:8001
+    depends_on:
+      mysql_documents:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      iam_service:
+        condition: service_started
+
+  document_celery_worker:
+    build:
+      context: ./services/document_service
+      dockerfile: Dockerfile
+    command: celery -A config worker -l info
+    volumes:
+      - ./services/document_service:/app
+      - document_storage:/app/media/documents
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${DOC_DB_NAME:-legalflow_documents}
+      - DATABASE_USER=${DOC_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${DOC_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_documents
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - IAM_SERVICE_URL=http://iam_service:8001
+    depends_on:
+      mysql_documents:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_iam_data:
+  mysql_doc_data:
+  document_storage:
