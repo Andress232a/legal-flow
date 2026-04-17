@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -36,6 +37,8 @@ User = get_user_model()
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.prefetch_related("user_roles__role").all()
     http_method_names = ["get", "post", "patch", "delete"]
+    filter_backends = [SearchFilter]
+    search_fields = ["username", "first_name", "last_name", "email"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -74,6 +77,20 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def me(self, request):
         serializer = UserListSerializer(request.user)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Listar usuarios por tipo",
+        description="Devuelve usuarios activos filtrados por user_type. "
+                    "Útil para poblar menús desplegables de abogados y clientes."
+    )
+    @action(detail=False, methods=["get"], url_path="by-type")
+    def by_type(self, request):
+        user_type = request.query_params.get("user_type")
+        qs = User.objects.filter(is_active=True).order_by("first_name", "last_name")
+        if user_type:
+            qs = qs.filter(user_type=user_type)
+        serializer = UserListSerializer(qs, many=True)
         return Response(serializer.data)
 
     @extend_schema(summary="Asignar rol a usuario")

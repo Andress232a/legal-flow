@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, UserCheck, UserX, Trash2 } from 'lucide-react';
+import { Plus, Search, UserCheck, UserX, Trash2, Check, X } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -50,8 +50,24 @@ export default function Users() {
     fetchUsers(value);
   };
 
+  const passwordRules = formData.password
+    ? [
+        formData.password.length >= 8,
+        /[A-Z]/.test(formData.password),
+        /[a-z]/.test(formData.password),
+        /\d/.test(formData.password),
+        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password),
+        formData.password === formData.password_confirm,
+      ]
+    : [];
+  const passwordValid = passwordRules.length > 0 && passwordRules.every(Boolean);
+
   const handleCreate = async () => {
     setFormError('');
+    if (!formData.username.trim()) return setFormError('El nombre de usuario es obligatorio.');
+    if (!formData.email.trim()) return setFormError('El email es obligatorio.');
+    if (!formData.password) return setFormError('La contraseña es obligatoria.');
+    if (!passwordValid) return setFormError('La contraseña no cumple todos los requisitos indicados.');
     setSubmitting(true);
     try {
       await usersApi.create(formData);
@@ -59,13 +75,24 @@ export default function Users() {
       setFormData({ username: '', email: '', password: '', password_confirm: '', first_name: '', last_name: '', user_type: 'lawyer' });
       fetchUsers();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: Record<string, string[]> } };
+      const error = err as { response?: { data?: Record<string, unknown> } };
       const data = error.response?.data;
       if (data) {
-        const firstError = Object.values(data).flat()[0];
-        setFormError(typeof firstError === 'string' ? firstError : 'Error al crear usuario.');
+        const messages = Object.entries(data)
+          .map(([field, val]) => {
+            const msgs = Array.isArray(val) ? val.join(' ') : String(val);
+            const fieldMap: Record<string, string> = {
+              username: 'Usuario', email: 'Email', password: 'Contraseña',
+              password_confirm: 'Confirmar contraseña', user_type: 'Tipo de usuario',
+              non_field_errors: '',
+            };
+            const label = fieldMap[field] ?? field;
+            return label ? `${label}: ${msgs}` : msgs;
+          })
+          .join('\n');
+        setFormError(messages || 'Error al crear usuario.');
       } else {
-        setFormError('Error al crear usuario.');
+        setFormError('Error al crear usuario. Verifica la conexión con el servidor.');
       }
     }
     setSubmitting(false);
@@ -191,7 +218,7 @@ export default function Users() {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Crear Usuario">
         <div className="space-y-4">
           {formError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</div>
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 whitespace-pre-line">{formError}</div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <Input label="Nombre" value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} />
@@ -200,9 +227,29 @@ export default function Users() {
           <Input label="Usuario" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} required />
           <Input label="Email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Contraseña" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
-            <Input label="Confirmar" type="password" value={formData.password_confirm} onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })} required />
+            <Input label="Contraseña." type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
+            <Input label="Confirmar contraseña." type="password" value={formData.password_confirm} onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })} required />
           </div>
+          {formData.password && (
+            <div className="rounded-lg border border-surface-200 bg-surface-50 p-3 space-y-1.5">
+              <p className="text-xs font-semibold text-surface-600 mb-2">Requisitos de contraseña</p>
+              {[
+                { label: 'Mínimo 8 caracteres.', ok: formData.password.length >= 8 },
+                { label: 'Al menos una letra mayúscula.', ok: /[A-Z]/.test(formData.password) },
+                { label: 'Al menos una letra minúscula.', ok: /[a-z]/.test(formData.password) },
+                { label: 'Al menos un número.', ok: /\d/.test(formData.password) },
+                { label: 'Al menos un carácter especial (!@#$%^&*).', ok: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(formData.password) },
+                { label: 'Las contraseñas coinciden.', ok: formData.password.length > 0 && formData.password === formData.password_confirm },
+              ].map(({ label, ok }) => (
+                <div key={label} className="flex items-center gap-2">
+                  {ok
+                    ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    : <X className="h-3.5 w-3.5 text-red-400 shrink-0" />}
+                  <span className={`text-xs ${ok ? 'text-emerald-700' : 'text-surface-500'}`}>{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-surface-700">Tipo de usuario</label>
             <select

@@ -8,6 +8,8 @@ import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Permissions from './pages/Permissions';
 import Documents from './pages/Documents';
+import Cases from './pages/Cases';
+import TimeTracking from './pages/TimeTracking';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
             <Route path="/roles" element={<Roles />} />
             <Route path="/permissions" element={<Permissions />} />
             <Route path="/documents" element={<Documents />} />
+            <Route path="/cases" element={<Cases />} />
+            <Route path="/time-tracking" element={<TimeTracking />} />
           </Route>
         </Routes>
       </AuthProvider>

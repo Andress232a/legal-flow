@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Upload, Search, Download, FileText, Eye, Clock, Shield,
-  Tag, History, ChevronRight, AlertCircle, Plus, X, RefreshCw,
+  Tag, History, ChevronRight, Plus, X, RefreshCw,
   Scale, File, ScanSearch, Building2, PenLine, Receipt, Mail,
   FileEdit, CheckCircle, Archive, FilePen, RotateCcw,
 } from 'lucide-react';
@@ -11,7 +11,8 @@ import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { documentsApi } from '../api/documents';
-import type { Document as DocType, DocumentVersion } from '../types';
+import { casesApi } from '../api/cases';
+import type { Document as DocType, DocumentVersion, Case } from '../types';
 
 // ─── Mappings ─────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ function DocumentDetailModal({ doc, onClose, onNewVersion }: {
                 { label: 'Tamaño', value: formatBytes(doc.file_size) },
                 { label: 'Versión actual', value: `v${doc.current_version}` },
                 { label: 'Fecha subida', value: formatDate(doc.created_at) },
-                { label: 'Confidencial', value: doc.is_confidential ? '🔒 Sí' : 'No' },
+                { label: 'Confidencial', value: doc.is_confidential ? <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-red-500" /> Sí</span> : 'No' },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg bg-surface-50 p-3">
                   <p className="text-xs text-surface-400">{item.label}</p>
@@ -267,15 +268,18 @@ function NewVersionModal({ doc, onClose, onSuccess }: { doc: DocType; onClose: (
 function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({ title: '', description: '', document_type: 'other', status: 'draft', case_id: '', is_confidential: false, tags: '' });
+  const [cases, setCases] = useState<Case[]>([]);
+  const [casesLoading, setCasesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const isValidUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+  useEffect(() => {
+    casesApi.list({ page: 1 }).then(r => setCases(r.results)).catch(() => setCases([])).finally(() => setCasesLoading(false));
+  }, []);
 
   const handleSubmit = async () => {
     if (!file) return setError('Selecciona un archivo.');
-    if (!form.case_id) return setError('El ID del caso es obligatorio.');
-    if (!isValidUUID(form.case_id)) return setError('El ID del caso debe ser un UUID válido.\nEjemplo: 550e8400-e29b-41d4-a716-446655440000');
+    if (!form.case_id) return setError('Debes seleccionar un caso.');
     setError(''); setSubmitting(true);
     try {
       const fd = new FormData();
@@ -294,55 +298,77 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   };
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
+  const selectCls = "block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500";
 
   return (
     <Modal open onClose={onClose} title="Subir Documento">
       <div className="space-y-4">
         {error && <div className="whitespace-pre-line rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-surface-700">Archivo <span className="text-red-500">*</span></label>
-          <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-surface-300 rounded-xl cursor-pointer hover:bg-surface-50 transition-colors">
-            <Upload className="mb-1 h-6 w-6 text-surface-400" />
-            <p className="text-sm text-surface-500">{file ? file.name : 'Haz click para seleccionar'}</p>
-            {file && <p className="text-xs text-surface-400">{formatBytes(file.size)}</p>}
+          <label className="block text-sm font-medium text-surface-700">Archivo.</label>
+          <label className="relative flex flex-col items-center justify-center w-full border-2 border-dashed border-surface-300 rounded-xl cursor-pointer hover:bg-surface-50 transition-colors overflow-hidden"
+            style={{ minHeight: '7rem' }}>
+            {file && file.type.startsWith('image/') ? (
+              <>
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={file.name}
+                  className="w-full max-h-48 object-contain rounded-xl"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-end pb-2 bg-gradient-to-t from-black/40 to-transparent rounded-xl">
+                  <p className="text-xs font-medium text-white truncate max-w-xs px-2">{file.name}</p>
+                  <p className="text-xs text-white/70">{formatBytes(file.size)}</p>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6">
+                <Upload className="mb-1 h-6 w-6 text-surface-400" />
+                <p className="text-sm text-surface-500">{file ? file.name : 'Seleccionar archivo.'}</p>
+                {file && <p className="text-xs text-surface-400">{formatBytes(file.size)}</p>}
+              </div>
+            )}
             <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
           </label>
         </div>
-        <Input label="Título" placeholder="Nombre del documento" value={form.title} onChange={(e) => set('title', e.target.value)} />
+        <Input label="Título." placeholder="Nombre del documento" value={form.title} onChange={(e) => set('title', e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-surface-700">Tipo <span className="text-red-500">*</span></label>
-            <select value={form.document_type} onChange={(e) => set('document_type', e.target.value)}
-              className="block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500">
+            <label className="block text-sm font-medium text-surface-700">Tipo.</label>
+            <select value={form.document_type} onChange={(e) => set('document_type', e.target.value)} className={selectCls}>
               {Object.entries(typeConfig).map(([val, cfg]) => <option key={val} value={val}>{cfg.label}</option>)}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-surface-700">Estado</label>
-            <select value={form.status} onChange={(e) => set('status', e.target.value)}
-              className="block w-full rounded-lg border border-surface-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500">
+            <label className="block text-sm font-medium text-surface-700">Estado.</label>
+            <select value={form.status} onChange={(e) => set('status', e.target.value)} className={selectCls}>
               {Object.entries(statusConfig).map(([val, cfg]) => <option key={val} value={val}>{cfg.label}</option>)}
             </select>
           </div>
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-surface-700">
-            ID del Caso <span className="text-red-500">*</span>
-            <span className="ml-2 text-xs font-normal text-surface-400">formato UUID</span>
-          </label>
-          <input type="text" placeholder="550e8400-e29b-41d4-a716-446655440000"
-            value={form.case_id} onChange={(e) => set('case_id', e.target.value)}
-            className={`block w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 ${form.case_id && !isValidUUID(form.case_id) ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-surface-300 focus:border-primary-500 focus:ring-primary-500'}`}
-          />
-          {form.case_id && !isValidUUID(form.case_id) && <p className="text-xs text-red-500">UUID inválido — debe tener el formato 8-4-4-4-12</p>}
+          <label className="block text-sm font-medium text-surface-700">Caso.</label>
+          <select
+            value={form.case_id}
+            onChange={(e) => set('case_id', e.target.value)}
+            className={selectCls}
+            disabled={casesLoading}
+          >
+            <option value="">— Seleccionar caso —</option>
+            {cases.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.case_number} — {c.title.length > 45 ? c.title.slice(0, 45) + '…' : c.title}
+              </option>
+            ))}
+            {!casesLoading && cases.length === 0 && <option disabled>No hay casos disponibles</option>}
+          </select>
         </div>
-        <Input label="Etiquetas" placeholder="urgente, apelación, cliente-xyz (separadas por coma)" value={form.tags} onChange={(e) => set('tags', e.target.value)} />
+        <Input label="Etiquetas." placeholder="urgente, apelación, cliente-xyz (separadas por coma)" value={form.tags} onChange={(e) => set('tags', e.target.value)} />
         <label className="flex items-center gap-3 rounded-lg border border-surface-200 p-3 cursor-pointer hover:bg-surface-50">
           <input type="checkbox" checked={form.is_confidential} onChange={(e) => set('is_confidential', e.target.checked)}
             className="h-4 w-4 rounded border-surface-300 text-primary-600" />
           <div>
-            <p className="text-sm font-medium text-surface-700 flex items-center gap-1.5"><Shield className="h-4 w-4 text-red-500" /> Documento confidencial</p>
-            <p className="text-xs text-surface-400">Requiere permisos adicionales para acceder</p>
+            <p className="text-sm font-medium text-surface-700 flex items-center gap-1.5"><Shield className="h-4 w-4 text-red-500" /> Documento confidencial.</p>
+            <p className="text-xs text-surface-400">Requiere permisos adicionales para acceder.</p>
           </div>
         </label>
         <div className="flex justify-end gap-3 pt-1">

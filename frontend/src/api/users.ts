@@ -1,34 +1,44 @@
 import { iamClient } from './client';
-import type { User, PaginatedResponse } from '../types';
+import type { User } from '../types';
+
+interface PaginatedUsers {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: User[];
+}
+
+interface CreateUserData {
+  username: string;
+  email: string;
+  password: string;
+  password_confirm: string;
+  first_name: string;
+  last_name: string;
+  user_type: string;
+}
 
 export const usersApi = {
-  list: async (page = 1, search = ''): Promise<PaginatedResponse<User>> => {
-    const params: Record<string, string | number> = { page };
-    if (search) params.search = search;
-    const { data } = await iamClient.get('/users/', { params });
-    return data;
-  },
+  list: (page = 1, search = '') =>
+    iamClient.get<PaginatedUsers>('/users/', {
+      params: { page, ...(search ? { search } : {}) },
+    }).then(r => r.data),
 
-  get: async (id: string): Promise<User> => {
-    const { data } = await iamClient.get(`/users/${id}/`);
-    return data;
-  },
+  listByType: (user_type?: string) =>
+    iamClient.get<User[]>('/users/by-type/', { params: user_type ? { user_type } : {} })
+      .then(r => r.data),
 
-  create: async (userData: Record<string, unknown>): Promise<User> => {
-    const { data } = await iamClient.post('/users/', userData);
-    return data;
-  },
+  lawyers: () =>
+    iamClient.get<User[]>('/users/by-type/', { params: { user_type: 'lawyer' } })
+      .then(r => r.data),
 
-  update: async (id: string, userData: Record<string, unknown>): Promise<User> => {
-    const { data } = await iamClient.patch(`/users/${id}/`, userData);
-    return data;
-  },
+  clients: () =>
+    iamClient.get<User[]>('/users/by-type/', { params: { user_type: 'client' } })
+      .then(r => r.data),
 
-  delete: async (id: string): Promise<void> => {
-    await iamClient.delete(`/users/${id}/`);
-  },
+  create: (data: CreateUserData) =>
+    iamClient.post<User>('/users/', data).then(r => r.data),
 
-  assignRole: async (userId: string, roleId: string): Promise<void> => {
-    await iamClient.post(`/users/${userId}/assign_role/`, { role: roleId });
-  },
+  delete: (id: string) =>
+    iamClient.delete(`/users/${id}/`).then(r => r.data),
 };

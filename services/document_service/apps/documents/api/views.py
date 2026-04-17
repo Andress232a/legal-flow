@@ -51,10 +51,19 @@ def _log_access(document, user_id, action_type, request, success=True, details=N
     retrieve=extend_schema(summary="Detalle de documento"),
 )
 class DocumentViewSet(viewsets.ModelViewSet):
-    queryset = Document.objects.prefetch_related("versions").all()
     parser_classes = [MultiPartParser, FormParser]
     http_method_names = ["get", "post", "patch", "delete"]
     filterset_fields = ["case_id", "document_type", "status", "is_confidential"]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = Document.objects.prefetch_related("versions").all()
+        user_type = getattr(user, "user_type", None)
+        if user_type == "client":
+            qs = qs.filter(uploaded_by=user.id, is_confidential=False)
+        elif user_type == "lawyer":
+            qs = qs.filter(is_confidential=False)
+        return qs
     search_fields = ["title", "description", "original_filename"]
     ordering_fields = ["created_at", "updated_at", "title", "file_size"]
 

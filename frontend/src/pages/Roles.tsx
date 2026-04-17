@@ -1,17 +1,194 @@
 import { useEffect, useState } from 'react';
-import { Plus, Shield, Trash2, Lock } from 'lucide-react';
+import { Plus, Shield, Trash2, Lock, Settings, X, Check } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { rolesApi } from '../api/roles';
-import type { Role } from '../types';
+import { permissionsApi } from '../api/permissions';
+import type { Role, RoleDetail, Permission } from '../types';
+
+const resourceLabels: Record<string, string> = {
+  case: 'Casos', document: 'Documentos', invoice: 'Facturas',
+  time_entry: 'Tiempo', user: 'Usuarios', role: 'Roles',
+  calendar: 'Calendario', report: 'Reportes',
+};
+
+const actionLabels: Record<string, string> = {
+  create: 'Crear', read: 'Leer', update: 'Actualizar', delete: 'Eliminar',
+  download: 'Descargar', assign: 'Asignar', approve: 'Aprobar', export: 'Exportar',
+};
+
+function ManagePermissionsModal({
+  role,
+  onClose,
+  onUpdated,
+}: {
+  role: Role;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [detail, setDetail] = useState<RoleDetail | null>(null);
+  const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(true);
+  const [selectedToAdd, setSelectedToAdd] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadDetail = async () => {
+    setLoadingDetail(true);
+    try {
+      const [d, permsRes] = await Promise.all([
+        rolesApi.get(role.id),
+        permissionsApi.list(1),
+      ]);
+      setDetail(d);
+      setAllPermissions(permsRes.results);
+    } catch {
+      setError('No se pudo cargar la información del rol.');
+    }
+    setLoadingDetail(false);
+  };
+
+  useEffect(() => { loadDetail(); }, []);
+
+  const assignedIds = new Set(detail?.permissions.map(p => p.permission) ?? []);
+  const available = allPermissions.filter(p => !assignedIds.has(p.id));
+
+  const handleAdd = async () => {
+    if (!selectedToAdd) return;
+    setSaving(true); setError('');
+    try {
+      await rolesApi.assignPermission(role.id, selectedToAdd);
+      setSelectedToAdd('');
+      await loadDetail();
+      onUpdated();
+    } catch {
+      setError('Error al asignar el permiso.');
+    }
+    setSaving(false);
+  };
+
+  const handleRevoke = async (permissionId: string) => {
+    setSaving(true); setError('');
+    try {
+      await rolesApi.revokePermission(role.id, permissionId);
+      await loadDetail();
+      onUpdated();
+    } catch {
+      setError('Error al revocar el permiso.');
+    }
+    setSaving(false);
+  };
+
+  const grouped = detail?.permissions.reduce<Record<string, typeof detail.permissions>>(
+    (acc, rp) => {
+      const perm = allPermissions.find(p => p.id === rp.permission);
+      const key = perm?.resource_type ?? 'otro';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(rp);
+      return acc;
+    },
+    {}
+  ) ?? {};
+
+  return (
+    <Modal open onClose={onClose} title={`Permisos: ${role.name}`} size="lg">
+      <div className="space-y-5">
+        {error && (
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        )}
+
+        {/* Agregar permiso */}
+        {!role.is_system_role && (
+          <div className="rounded-lg border border-surface-200 bg-surface-50 p-4">
+            <p className="mb-3 text-sm font-semibold text-surface-700">Agregar permiso.</p>
+            <div className="flex gap-2">
+              <select
+                value={selectedToAdd}
+                onChange={e => setSelectedToAdd(e.target.value)}
+                className="flex-1 rounded-lg border border-surface-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">Selecciona un permiso...</option>
+                {available.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {resourceLabels[p.resource_type] ?? p.resource_type} — {actionLabels[p.action] ?? p.action}
+                  </option>
+                ))}
+              </select>
+              <Button onClick={handleAdd} loading={saving} disabled={!selectedToAdd}>
+                <Check className="h-4 w-4" /> Agregar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de permisos actuales */}
+        {loadingDetail ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-surface-200" />
+            ))}
+          </div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <p className="py-6 text-center text-sm text-surface-400">
+            Este rol no tiene permisos asignados.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(grouped).map(([resource, rolePerms]) => (
+              <div key={resource}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-surface-500">
+                  {resourceLabels[resource] ?? resource}
+                </p>
+                <div className="space-y-1">
+                  {rolePerms.map(rp => {
+                    const perm = allPermissions.find(p => p.id === rp.permission);
+                    return (
+                      <div
+                        key={rp.id}
+                        className="flex items-center justify-between rounded-lg border border-surface-100 bg-white px-4 py-2.5"
+                      >
+                        <div>
+                          <span className="text-sm font-medium text-surface-800">
+                            {perm ? actionLabels[perm.action] ?? perm.action : rp.id}
+                          </span>
+                          {perm?.name && (
+                            <span className="ml-2 text-xs text-surface-400">{perm.name}</span>
+                          )}
+                        </div>
+                        {!role.is_system_role && (
+                          <button
+                            onClick={() => handleRevoke(rp.permission)}
+                            disabled={saving}
+                            className="rounded p-1 text-surface-300 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2">
+          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 
 export default function Roles() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [managingRole, setManagingRole] = useState<Role | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,6 +204,7 @@ export default function Roles() {
   useEffect(() => { fetchRoles(); }, []);
 
   const handleCreate = async () => {
+    if (!formData.name.trim()) return;
     setSubmitting(true);
     try {
       await rolesApi.create(formData);
@@ -88,34 +266,64 @@ export default function Roles() {
                     )}
                   </div>
                 </div>
-                {role.is_system_role ? (
-                  <Lock className="h-4 w-4 text-surface-300" />
-                ) : (
+                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
-                    onClick={() => handleDelete(role)}
-                    className="rounded-lg p-1.5 text-surface-300 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                    onClick={() => setManagingRole(role)}
+                    className="rounded-lg p-1.5 text-surface-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                    title="Gestionar permisos"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Settings className="h-4 w-4" />
                   </button>
-                )}
+                  {role.is_system_role ? (
+                    <Lock className="h-4 w-4 text-surface-300" />
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(role)}
+                      className="rounded-lg p-1.5 text-surface-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
               {role.description && (
                 <p className="mt-3 text-sm text-surface-500 line-clamp-2">{role.description}</p>
               )}
-              <div className="mt-4 flex items-center gap-2">
-                <Badge variant="info">{role.permissions_count} permisos</Badge>
-                {role.is_system_role && <Badge variant="warning">Sistema</Badge>}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Badge variant="info">{role.permissions_count} permisos</Badge>
+                  {role.is_system_role && <Badge variant="warning">Sistema</Badge>}
+                </div>
+                <button
+                  onClick={() => setManagingRole(role)}
+                  className="text-xs text-primary-600 hover:underline"
+                >
+                  Ver permisos
+                </button>
               </div>
             </Card>
           ))
         )}
       </div>
 
+      {managingRole && (
+        <ManagePermissionsModal
+          role={managingRole}
+          onClose={() => setManagingRole(null)}
+          onUpdated={fetchRoles}
+        />
+      )}
+
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Crear Rol">
         <div className="space-y-4">
-          <Input label="Nombre del Rol" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+          <Input
+            label="Nombre del rol."
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-surface-700">Descripción</label>
+            <label className="block text-sm font-medium text-surface-700">Descripción.</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}

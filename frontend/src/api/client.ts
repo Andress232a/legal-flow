@@ -10,6 +10,26 @@ const docClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+const matterClient = axios.create({
+  baseURL: '/api/matters-service',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+const timeClient = axios.create({
+  baseURL: '/api/time-service',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+const billingClient = axios.create({
+  baseURL: '/api/billing-service',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+const calendarClient = axios.create({
+  baseURL: '/api/calendar-service',
+  headers: { 'Content-Type': 'application/json' },
+});
+
 function attachInterceptors(instance: typeof iamClient) {
   instance.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
@@ -46,5 +66,9 @@ function attachInterceptors(instance: typeof iamClient) {
 
 attachInterceptors(iamClient);
 attachInterceptors(docClient);
+attachInterceptors(matterClient);
+attachInterceptors(timeClient);
+attachInterceptors(billingClient);
+attachInterceptors(calendarClient);
 
-export { iamClient, docClient };
+export { iamClient, docClient, matterClient, timeClient, billingClient, calendarClient };
