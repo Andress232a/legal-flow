@@ -200,6 +200,10 @@ class CaseDate(models.Model):
     created_by = models.UUIDField(
         help_text="ID del usuario que creó la fecha (IAM Service)",
     )
+    calendar_event_id = models.UUIDField(
+        null=True, blank=True,
+        help_text="ID del evento sincronizado en el Calendar Service",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

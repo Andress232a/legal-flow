@@ -15,6 +15,7 @@ const resourceLabels: Record<string, string> = {
   calendar: 'Calendario', report: 'Reportes',
 };
 
+
 const actionLabels: Record<string, string> = {
   create: 'Crear', read: 'Leer', update: 'Actualizar', delete: 'Eliminar',
   download: 'Descargar', assign: 'Asignar', approve: 'Aprobar', export: 'Exportar',
@@ -44,7 +45,7 @@ function ManagePermissionsModal({
         permissionsApi.list(1),
       ]);
       setDetail(d);
-      setAllPermissions(permsRes.results);
+      setAllPermissions(Array.isArray(permsRes?.results) ? permsRes.results : []);
     } catch {
       setError('No se pudo cargar la información del rol.');
     }
@@ -196,7 +197,7 @@ export default function Roles() {
     setLoading(true);
     try {
       const res = await rolesApi.list(1);
-      setRoles(res.results);
+      setRoles(Array.isArray(res?.results) ? res.results : []);
     } catch { /* empty */ }
     setLoading(false);
   };
@@ -253,56 +254,56 @@ export default function Roles() {
           </div>
         ) : (
           roles.map((role) => (
-            <Card key={role.id} className="group relative transition-all duration-200 hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                    <Shield className="h-5 w-5 text-emerald-600" />
+              <Card key={role.id} className="group relative transition-all duration-200 hover:shadow-md">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                      <Shield className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-surface-900">{role.name}</h3>
+                      {role.parent_name && (
+                        <p className="text-xs text-surface-400">Hereda de: {role.parent_name}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-surface-900">{role.name}</h3>
-                    {role.parent_name && (
-                      <p className="text-xs text-surface-400">Hereda de: {role.parent_name}</p>
+                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={() => setManagingRole(role)}
+                      className="rounded-lg p-1.5 text-surface-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
+                      title="Gestionar permisos"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </button>
+                    {role.is_system_role ? (
+                      <Lock className="h-4 w-4 text-surface-300" />
+                    ) : (
+                      <button
+                        onClick={() => handleDelete(role)}
+                        className="rounded-lg p-1.5 text-surface-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {role.description && (
+                  <p className="mt-3 text-sm text-surface-500 line-clamp-2">{role.description}</p>
+                )}
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge variant="info">{role.permissions_count ?? 0} permisos</Badge>
+                    {role.is_system_role && <Badge variant="warning">Sistema</Badge>}
+                  </div>
                   <button
                     onClick={() => setManagingRole(role)}
-                    className="rounded-lg p-1.5 text-surface-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
-                    title="Gestionar permisos"
+                    className="text-xs text-primary-600 hover:underline"
                   >
-                    <Settings className="h-4 w-4" />
+                    Ver permisos
                   </button>
-                  {role.is_system_role ? (
-                    <Lock className="h-4 w-4 text-surface-300" />
-                  ) : (
-                    <button
-                      onClick={() => handleDelete(role)}
-                      className="rounded-lg p-1.5 text-surface-300 transition-colors hover:bg-red-50 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
                 </div>
-              </div>
-              {role.description && (
-                <p className="mt-3 text-sm text-surface-500 line-clamp-2">{role.description}</p>
-              )}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Badge variant="info">{role.permissions_count} permisos</Badge>
-                  {role.is_system_role && <Badge variant="warning">Sistema</Badge>}
-                </div>
-                <button
-                  onClick={() => setManagingRole(role)}
-                  className="text-xs text-primary-600 hover:underline"
-                >
-                  Ver permisos
-                </button>
-              </div>
-            </Card>
-          ))
+              </Card>
+            ))
         )}
       </div>
 

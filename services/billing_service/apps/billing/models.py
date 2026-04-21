@@ -18,7 +18,7 @@ class Invoice(models.Model):
     # Referencias externas (UUID sin FK real — microservicios)
     case_id = models.UUIDField(db_index=True)
     client_id = models.UUIDField(db_index=True)
-    lawyer_id = models.UUIDField(db_index=True)
+    lawyer_id = models.UUIDField(db_index=True, null=True, blank=True)
     created_by = models.UUIDField()
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)

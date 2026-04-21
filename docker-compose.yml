@@ -229,6 +229,7 @@ services:
       - DATABASE_PORT=3306
       - CELERY_BROKER_URL=redis://redis:6379/0
       - IAM_SERVICE_URL=http://iam_service:8001
+      - CALENDAR_SERVICE_URL=http://calendar_service:8006
       - ALLOWED_HOSTS=*
     depends_on:
       mysql_matters:
@@ -255,6 +256,7 @@ services:
       - DATABASE_PORT=3306
       - CELERY_BROKER_URL=redis://redis:6379/0
       - IAM_SERVICE_URL=http://iam_service:8001
+      - CALENDAR_SERVICE_URL=http://calendar_service:8006
     depends_on:
       mysql_matters:
         condition: service_healthy

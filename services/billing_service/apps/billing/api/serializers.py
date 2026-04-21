@@ -73,6 +73,7 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
     items = InvoiceItemCreateSerializer(many=True, required=False)
+    lawyer_id = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = Invoice

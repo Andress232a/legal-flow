@@ -274,7 +274,7 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [error, setError] = useState('');
 
   useEffect(() => {
-    casesApi.list({ page: 1 }).then(r => setCases(r.results)).catch(() => setCases([])).finally(() => setCasesLoading(false));
+    casesApi.list({ page: 1 }).then(r => setCases(Array.isArray(r?.results) ? r.results : [])).catch(() => setCases([])).finally(() => setCasesLoading(false));
   }, []);
 
   const handleSubmit = async () => {
@@ -396,7 +396,7 @@ export default function Documents() {
     setLoading(true);
     try {
       const res = await documentsApi.list(1, q);
-      let filtered = res.results;
+      let filtered = Array.isArray(res?.results) ? res.results : [];
       if (type) filtered = filtered.filter(d => d.document_type === type);
       if (status) filtered = filtered.filter(d => d.status === status);
       setDocuments(filtered);

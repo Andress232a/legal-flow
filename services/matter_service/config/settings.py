@@ -118,6 +118,9 @@ CELERY_RESULT_SERIALIZER = "json"
 # URL del IAM Service para verificación de permisos
 IAM_SERVICE_URL = os.environ.get("IAM_SERVICE_URL", "http://localhost:8001")
 
+# URL del Calendar Service para sincronización de fechas
+CALENDAR_SERVICE_URL = os.environ.get("CALENDAR_SERVICE_URL", "http://localhost:8006")
+
 LANGUAGE_CODE = "es"
 TIME_ZONE = "UTC"
 USE_I18N = True

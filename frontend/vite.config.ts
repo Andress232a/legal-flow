@@ -22,22 +22,22 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/docs-service/, '/api'),
       },
       '/api/matters-service': {
-        target: 'http://localhost:8003',
+        target: `http://${apiHost}:8003`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/matters-service/, '/api'),
       },
       '/api/time-service': {
-        target: 'http://localhost:8004',
+        target: `http://${apiHost}:8004`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/time-service/, '/api'),
       },
       '/api/billing-service': {
-        target: 'http://localhost:8005',
+        target: `http://${apiHost}:8005`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/billing-service/, '/api'),
       },
       '/api/calendar-service': {
-        target: 'http://localhost:8006',
+        target: `http://${apiHost}:8006`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/calendar-service/, '/api'),
       },

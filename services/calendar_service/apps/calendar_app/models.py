@@ -29,7 +29,7 @@ class CalendarEvent(models.Model):
         null=True, blank=True,
         help_text="ID del CaseDate del Matter Service (si viene sincronizado)",
     )
-    assigned_to = models.UUIDField(db_index=True, help_text="user_id del responsable")
+    assigned_to = models.UUIDField(db_index=True, null=True, blank=True, help_text="user_id del responsable")
     created_by = models.UUIDField()
 
     title = models.CharField(max_length=300)
