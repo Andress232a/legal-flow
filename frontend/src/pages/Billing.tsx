@@ -53,8 +53,8 @@ function CreateInvoiceModal({ onClose, onSuccess }: { onClose: () => void; onSuc
   const [error, setError] = useState('');
 
   useEffect(() => {
-    casesApi.list({}).then(r => setCases(r.results)).catch(() => setCases([]));
-    usersApi.clients().then(setClients).catch(() => setClients([]));
+    casesApi.list({}).then(r => setCases(Array.isArray(r?.results) ? r.results : [])).catch(() => setCases([]));
+    usersApi.clients().then(r => setClients(Array.isArray(r) ? r : [])).catch(() => setClients([]));
   }, []);
 
   const handleCaseChange = (caseId: string) => {
@@ -381,7 +381,9 @@ function InvoiceDetailModal({ invoice, onClose, onUpdated }: { invoice: Invoice;
 
 export default function Billing() {
   const { user: authUser } = useAuth();
-  const canCreate = authUser?.user_type === 'admin' || authUser?.user_type === 'lawyer';
+  const userType = authUser?.user_type ?? 'client';
+  const isClient = userType === 'client';
+  const canCreate = userType === 'admin' || userType === 'lawyer';
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stats, setStats] = useState<InvoiceStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -398,9 +400,10 @@ export default function Billing() {
         billingApi.list({ search: q || undefined, status: st || undefined }),
         billingApi.stats(),
       ]);
-      setInvoices(invRes.results);
-      setStats(statsRes);
+      setInvoices(Array.isArray(invRes?.results) ? invRes.results : []);
+      setStats(statsRes && typeof statsRes === 'object' && !Array.isArray(statsRes) ? statsRes : null);
     } catch (e: unknown) {
+      setInvoices([]); setStats(null);
       const err = e as { response?: { status?: number } };
       if (err?.response?.status === 403) {
         setError('No tienes permisos para ver las facturas.');
@@ -432,7 +435,9 @@ export default function Billing() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-surface-900">Facturación</h1>
-          <p className="text-sm text-surface-500">Gestión de facturas y pagos del despacho</p>
+          <p className="text-sm text-surface-500">
+            {isClient ? 'Tus facturas y estado de pagos' : 'Gestión de facturas y pagos del despacho'}
+          </p>
         </div>
         {canCreate && (
           <Button onClick={() => setShowCreate(true)}>
@@ -471,14 +476,16 @@ export default function Billing() {
             })}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            {moneyStats.map(s => (
-              <Card key={s.label} className="text-center">
-                <p className="text-xl font-bold text-surface-900">{fmt(s.value)}</p>
-                <p className="text-xs text-surface-500 mt-1">{s.label}</p>
-              </Card>
-            ))}
-          </div>
+          {!isClient && (
+            <div className="grid grid-cols-3 gap-4">
+              {moneyStats.map(s => (
+                <Card key={s.label} className="text-center">
+                  <p className="text-xl font-bold text-surface-900">{fmt(s.value)}</p>
+                  <p className="text-xs text-surface-500 mt-1">{s.label}</p>
+                </Card>
+              ))}
+            </div>
+          )}
         </>
       )}
 

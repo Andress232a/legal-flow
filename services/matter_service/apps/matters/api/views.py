@@ -377,6 +377,16 @@ class CaseViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         case_date = serializer.save(case=case, created_by=request.user.id)
 
+        # Sincronizar con Calendar Service
+        try:
+            from apps.matters.calendar_client import create_calendar_event
+            event_id = create_calendar_event(case_date, case.assigned_lawyer_id)
+            if event_id:
+                case_date.calendar_event_id = event_id
+                case_date.save(update_fields=["calendar_event_id"])
+        except Exception:
+            logger.exception("Error al sincronizar CaseDate %s con Calendar Service", case_date.id)
+
         _log_activity(
             case, request.user.id,
             CaseActivityLog.ActivityType.DATE_ADDED,
@@ -419,6 +429,14 @@ class CaseViewSet(viewsets.ModelViewSet):
         case_date.completed_at = timezone.now()
         case_date.save()
 
+        # Sincronizar completado con Calendar Service
+        if case_date.calendar_event_id:
+            try:
+                from apps.matters.calendar_client import complete_calendar_event
+                complete_calendar_event(str(case_date.calendar_event_id))
+            except Exception:
+                logger.exception("Error al completar CalendarEvent %s", case_date.calendar_event_id)
+
         _log_activity(
             case, request.user.id,
             CaseActivityLog.ActivityType.DATE_COMPLETED,
@@ -449,7 +467,13 @@ class CaseViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
 
         from django.db.models import Count
+        user = request.user
+        user_type = getattr(user, "user_type", None)
         cases = Case.objects.all()
+        if user_type == "lawyer":
+            cases = cases.filter(assigned_lawyer_id=user.id)
+        elif user_type == "client":
+            cases = cases.filter(client_id=user.id)
 
         stats = {
             "total": cases.count(),

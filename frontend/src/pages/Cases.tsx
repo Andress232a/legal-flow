@@ -85,8 +85,8 @@ function CreateCaseModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   const [clients, setClients] = useState<User[]>([]);
 
   useEffect(() => {
-    usersApi.lawyers().then(setLawyers).catch(() => setLawyers([]));
-    usersApi.clients().then(setClients).catch(() => setClients([]));
+    usersApi.lawyers().then(r => setLawyers(Array.isArray(r) ? r : [])).catch(() => setLawyers([]));
+    usersApi.clients().then(r => setClients(Array.isArray(r) ? r : [])).catch(() => setClients([]));
   }, []);
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
@@ -390,7 +390,9 @@ function ChangeStatusModal({ caseItem, onClose, onSuccess }: { caseItem: Case; o
 
 // ─── Case Detail Modal ─────────────────────────────────────────────────────────
 
-function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onClose: () => void; onRefresh: () => void }) {
+function CaseDetailModal({ caseItem, onClose, onRefresh, userType }: { caseItem: Case; onClose: () => void; onRefresh: () => void; userType: string }) {
+  const canEdit = userType === 'admin' || userType === 'lawyer';
+  const isClient = userType === 'client';
   const [tab, setTab] = useState<'info' | 'parties' | 'dates' | 'activity'>('info');
   const [parties, setParties] = useState<CaseParty[]>([]);
   const [dates, setDates] = useState<CaseDate[]>([]);
@@ -455,7 +457,7 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
     { id: 'info', label: 'Información' },
     { id: 'parties', label: `Partes (${currentCase.parties_count ?? 0})` },
     { id: 'dates', label: `Fechas (${currentCase.upcoming_dates_count ?? 0} próx.)` },
-    { id: 'activity', label: 'Actividad' },
+    ...(!isClient ? [{ id: 'activity', label: 'Actividad' }] : []),
   ];
 
   return (
@@ -502,7 +504,7 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
                 <div className="rounded-lg bg-surface-50 p-3">
                   <p className="text-xs text-surface-400 mb-2">Etiquetas</p>
                   <div className="flex flex-wrap gap-1">
-                    {currentCase.tags.map((tag) => (
+                    {(currentCase.tags ?? []).map((tag) => (
                       <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
                         <Tag className="h-3 w-3" /> {tag}
                       </span>
@@ -518,20 +520,24 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
-                <Button onClick={() => setShowChangeStatus(true)} size="sm" variant="secondary" className="flex-1">
-                  <Edit className="h-4 w-4" /> Cambiar estado
-                </Button>
-              </div>
+              {canEdit && (
+                <div className="flex gap-2 pt-1">
+                  <Button onClick={() => setShowChangeStatus(true)} size="sm" variant="secondary" className="flex-1">
+                    <Edit className="h-4 w-4" /> Cambiar estado
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
           {/* PARTIES TAB */}
           {tab === 'parties' && (
             <div className="space-y-3">
-              <Button onClick={() => setShowAddParty(true)} size="sm">
-                <Plus className="h-4 w-4" /> Añadir parte
-              </Button>
+              {canEdit && (
+                <Button onClick={() => setShowAddParty(true)} size="sm">
+                  <Plus className="h-4 w-4" /> Añadir parte
+                </Button>
+              )}
               {loading ? (
                 <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" /></div>
               ) : parties.length === 0 ? (
@@ -553,10 +559,12 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
                         {party.identification && <span>ID: {party.identification}</span>}
                       </div>
                     </div>
-                    <button onClick={() => handleRemoveParty(party.id)}
-                      className="shrink-0 rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {canEdit && (
+                      <button onClick={() => handleRemoveParty(party.id)}
+                        className="shrink-0 rounded-lg p-1.5 text-surface-400 hover:bg-red-50 hover:text-red-600">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -566,9 +574,11 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
           {/* DATES TAB */}
           {tab === 'dates' && (
             <div className="space-y-3">
-              <Button onClick={() => setShowAddDate(true)} size="sm">
-                <Plus className="h-4 w-4" /> Añadir fecha
-              </Button>
+              {canEdit && (
+                <Button onClick={() => setShowAddDate(true)} size="sm">
+                  <Plus className="h-4 w-4" /> Añadir fecha
+                </Button>
+              )}
               {loading ? (
                 <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" /></div>
               ) : dates.length === 0 ? (
@@ -589,7 +599,7 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
                       <p className="mt-1 text-xs text-surface-500">{formatDateTime(d.scheduled_date)}</p>
                       {d.notes && <p className="mt-1 text-xs text-surface-400 italic">{d.notes}</p>}
                     </div>
-                    {!d.is_completed && (
+                    {canEdit && !d.is_completed && (
                       <button onClick={() => handleCompleteDate(d.id)}
                         className="shrink-0 rounded-lg p-1.5 text-surface-400 hover:bg-emerald-50 hover:text-emerald-600"
                         title="Marcar como completado">
@@ -666,7 +676,8 @@ function CaseDetailModal({ caseItem, onClose, onRefresh }: { caseItem: Case; onC
 
 export default function Cases() {
   const { user: authUser } = useAuth();
-  const canCreate = authUser?.user_type === 'admin' || authUser?.user_type === 'lawyer';
+  const userType = authUser?.user_type ?? 'client';
+  const canCreate = userType === 'admin' || userType === 'lawyer';
   const [cases, setCases] = useState<Case[]>([]);
   const [stats, setStats] = useState<CaseStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -685,9 +696,10 @@ export default function Cases() {
         casesApi.list({ search: q || undefined, status: st || undefined, case_type: tp || undefined }),
         casesApi.stats(),
       ]);
-      setCases(casesRes.results);
-      setStats(statsRes);
+      setCases(Array.isArray(casesRes?.results) ? casesRes.results : []);
+      setStats(statsRes && typeof statsRes === 'object' && !Array.isArray(statsRes) ? statsRes : null);
     } catch (err: unknown) {
+      setCases([]); setStats(null);
       const e = err as { response?: { status?: number } };
       if (e?.response?.status === 403) {
         setError('No tienes permisos para ver los casos. Contacta al administrador para que te asigne el rol correspondiente.');
@@ -878,7 +890,7 @@ export default function Cases() {
       </Card>
 
       {/* Type distribution */}
-      {stats && Object.keys(stats.by_type).length > 0 && (
+      {stats && stats.by_type && Object.keys(stats.by_type).length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {Object.entries(stats.by_type).map(([type, count]) => {
             const cfg = typeConfig[type] || typeConfig.other;
@@ -909,6 +921,7 @@ export default function Cases() {
           caseItem={selectedCase}
           onClose={() => setSelectedCase(null)}
           onRefresh={() => fetchData(search, filterStatus, filterType)}
+          userType={userType}
         />
       )}
     </div>

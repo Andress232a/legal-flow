@@ -12,6 +12,7 @@ import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { timeTrackingApi } from '../api/timeTracking';
 import { casesApi } from '../api/cases';
+import { useAuth } from '../context/AuthContext';
 import type { TimeEntry, Timer as TimerType, TimeStats, Case } from '../types';
 
 // ─── Mappings ─────────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ function CaseSelect({ value, onChange, cases, loading }: {
         <option value="">— Seleccionar caso —</option>
         {cases.map(c => (
           <option key={c.id} value={c.id}>
-            {c.case_number} — {c.title.length > 45 ? c.title.slice(0, 45) + '…' : c.title}
+            {c.case_number} — {(c.title?.length ?? 0) > 45 ? c.title.slice(0, 45) + '…' : (c.title ?? '')}
           </option>
         ))}
         {!loading && cases.length === 0 && (
@@ -164,7 +165,7 @@ function StartTimerModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    casesApi.list({ page: 1 }).then(r => setCases(r.results)).catch(() => setCases([])).finally(() => setCasesLoading(false));
+    casesApi.list({ page: 1 }).then(r => setCases(Array.isArray(r?.results) ? r.results : [])).catch(() => setCases([])).finally(() => setCasesLoading(false));
   }, []);
 
   const handleSubmit = async () => {
@@ -236,7 +237,7 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
-    casesApi.list({ page: 1 }).then(r => setCases(r.results)).catch(() => setCases([])).finally(() => setCasesLoading(false));
+    casesApi.list({ page: 1 }).then(r => setCases(Array.isArray(r?.results) ? r.results : [])).catch(() => setCases([])).finally(() => setCasesLoading(false));
   }, []);
 
   const handleSubmit = async () => {
@@ -329,6 +330,9 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function TimeTracking() {
+  const { user: authUser } = useAuth();
+  const userType = authUser?.user_type ?? 'assistant';
+  const isAdmin = userType === 'admin';
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [stats, setStats] = useState<TimeStats | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimerType | null>(null);
@@ -353,12 +357,14 @@ export default function TimeTracking() {
         timeTrackingApi.listEntries(params),
         timeTrackingApi.getStats(),
       ]);
-      setEntries(entriesRes.results);
-      setTotal(entriesRes.count);
-      setStats(statsRes);
-      setActiveTimer(statsRes.active_timer);
-    } catch (err) {
-      console.error('Error loading time tracking data', err);
+      setEntries(Array.isArray(entriesRes?.results) ? entriesRes.results : []);
+      setTotal(entriesRes?.count ?? 0);
+      setStats(statsRes ?? null);
+      setActiveTimer(statsRes?.active_timer ?? null);
+    } catch {
+      setEntries([]);
+      setStats(null);
+      setActiveTimer(null);
     }
     setLoading(false);
   }, [page, search, filterTask]);
@@ -492,7 +498,7 @@ export default function TimeTracking() {
               </div>
               <div>
                 <p className="text-xs text-surface-500">Importe facturable</p>
-                <p className="text-2xl font-bold text-surface-900">{stats.billable_amount.toFixed(0)}€</p>
+                <p className="text-2xl font-bold text-surface-900">{(stats.billable_amount ?? 0).toFixed(0)}€</p>
               </div>
             </div>
           </Card>

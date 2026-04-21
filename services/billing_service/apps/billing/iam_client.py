@@ -14,7 +14,7 @@ def check_permission(user_id, action, resource_type="invoice", resource_id=None)
     try:
         response = requests.post(
             IAM_CHECK_PERMISSION_URL, json=payload, timeout=REQUEST_TIMEOUT,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "Host": "localhost"},
         )
         response.raise_for_status()
         data = response.json()

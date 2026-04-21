@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleRoute from './components/RoleRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -10,6 +11,8 @@ import Permissions from './pages/Permissions';
 import Documents from './pages/Documents';
 import Cases from './pages/Cases';
 import TimeTracking from './pages/TimeTracking';
+import Billing from './pages/Billing';
+import Calendar from './pages/Calendar';
 
 export default function App() {
   return (
@@ -25,12 +28,38 @@ export default function App() {
             }
           >
             <Route path="/" element={<Dashboard />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/roles" element={<Roles />} />
-            <Route path="/permissions" element={<Permissions />} />
-            <Route path="/documents" element={<Documents />} />
             <Route path="/cases" element={<Cases />} />
-            <Route path="/time-tracking" element={<TimeTracking />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/billing" element={<Billing />} />
+
+            {/* Solo admin, abogado y asistente */}
+            <Route path="/time-tracking" element={
+              <RoleRoute allowed={['admin', 'lawyer', 'assistant']}>
+                <TimeTracking />
+              </RoleRoute>
+            } />
+            <Route path="/calendar" element={
+              <RoleRoute allowed={['admin', 'lawyer', 'assistant']}>
+                <Calendar />
+              </RoleRoute>
+            } />
+
+            {/* Solo admin */}
+            <Route path="/users" element={
+              <RoleRoute allowed={['admin']}>
+                <Users />
+              </RoleRoute>
+            } />
+            <Route path="/roles" element={
+              <RoleRoute allowed={['admin']}>
+                <Roles />
+              </RoleRoute>
+            } />
+            <Route path="/permissions" element={
+              <RoleRoute allowed={['admin']}>
+                <Permissions />
+              </RoleRoute>
+            } />
           </Route>
         </Routes>
       </AuthProvider>

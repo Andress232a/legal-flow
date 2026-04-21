@@ -120,17 +120,19 @@ class CaseCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         from django.utils import timezone
         year = timezone.now().year
-        last = Case.objects.filter(
-            case_number__startswith=f"EXP-{year}-"
-        ).order_by("-case_number").first()
-        if last:
+        prefix = f"EXP-{year}-"
+        existing = Case.objects.filter(case_number__icontains=f"-{year}-").values_list("case_number", flat=True)
+        max_seq = 0
+        for cn in existing:
             try:
-                seq = int(last.case_number.split("-")[-1]) + 1
+                parts = cn.upper().split("-")
+                if len(parts) == 3 and parts[1] == str(year):
+                    seq = int(parts[2])
+                    if seq > max_seq:
+                        max_seq = seq
             except (ValueError, IndexError):
-                seq = 1
-        else:
-            seq = 1
-        validated_data["case_number"] = f"EXP-{year}-{seq:03d}"
+                pass
+        validated_data["case_number"] = f"{prefix}{max_seq + 1:03d}"
         return super().create(validated_data)
 
 

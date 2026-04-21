@@ -38,7 +38,7 @@ export default function Users() {
     setLoading(true);
     try {
       const res = await usersApi.list(1, q);
-      setUsers(res.results);
+      setUsers(Array.isArray(res?.results) ? res.results : []);
     } catch { /* empty */ }
     setLoading(false);
   };
@@ -181,7 +181,7 @@ export default function Users() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {u.roles.length > 0 ? u.roles.map((r) => (
+                        {(u.roles?.length ?? 0) > 0 ? (u.roles ?? []).map((r) => (
                           <Badge key={r} variant="default">{r}</Badge>
                         )) : (
                           <span className="text-xs text-surface-400">Sin roles</span>

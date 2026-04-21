@@ -17,7 +17,7 @@ def check_permission(user_id: str, action: str, resource_type: str = "time_entry
     Verifica si user_id puede realizar action sobre resource_type[:resource_id].
     Retorna True si permitido, False si denegado o error.
     """
-    url = f"{settings.IAM_SERVICE_URL}/api/check-permission/"
+    url = f"{settings.IAM_SERVICE_URL}/check-permission/"
     payload = {
         "user_id": str(user_id),
         "action": action,
@@ -27,7 +27,10 @@ def check_permission(user_id: str, action: str, resource_type: str = "time_entry
         payload["resource_id"] = str(resource_id)
 
     try:
-        resp = requests.post(url, json=payload, timeout=IAM_TIMEOUT)
+        resp = requests.post(
+            url, json=payload, timeout=IAM_TIMEOUT,
+            headers={"Host": "localhost", "Content-Type": "application/json"},
+        )
         if resp.status_code == 200:
             return resp.json().get("allowed", False)
         logger.warning("IAM check-permission returned %s", resp.status_code)

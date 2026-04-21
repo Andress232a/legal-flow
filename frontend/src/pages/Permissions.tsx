@@ -37,7 +37,7 @@ export default function Permissions() {
       setLoading(true);
       try {
         const res = await permissionsApi.list(1, filter);
-        setPermissions(res.results);
+        setPermissions(Array.isArray(res?.results) ? res.results : []);
       } catch { /* empty */ }
       setLoading(false);
     }

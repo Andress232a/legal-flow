@@ -48,6 +48,7 @@ class CalendarEventDetailSerializer(serializers.ModelSerializer):
 
 class CalendarEventCreateSerializer(serializers.ModelSerializer):
     reminders = EventReminderSerializer(many=True, required=False)
+    assigned_to = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = CalendarEvent
