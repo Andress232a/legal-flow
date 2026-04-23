@@ -47,19 +47,18 @@ HOP_BY_HOP = frozenset(
         "transfer-encoding",
         "upgrade",
         "host",
-        "content-length",
     }
 )
 
 
 def _normalize_path(path: str) -> str:
-    return path.lstrip("/").rstrip("/")
+    return path.lstrip("/")
 
 
 def is_public_route(path: str, method: str) -> bool:
     if method.upper() != "POST":
         return False
-    p = _normalize_path(path.split("?", 1)[0])
+    p = _normalize_path(path.split("?", 1)[0]).rstrip("/")
     return p in ("api/iam/token", "api/iam/token/refresh")
 
 
@@ -139,7 +138,7 @@ async def gateway_proxy(full_path: str, request: Request):
         auth = request.headers.get("authorization")
         if not jwt_valid(auth):
             return Response(
-                content=b'{"detail":"Credenciales no proporcionadas o token inválido."}',
+                content='{"detail":"Credenciales no proporcionadas o token invalido."}'.encode(),
                 status_code=401,
                 media_type="application/json",
             )
@@ -148,7 +147,10 @@ async def gateway_proxy(full_path: str, request: Request):
     for key, value in request.headers.items():
         if key.lower() in HOP_BY_HOP:
             continue
+        if key.lower() == "host":
+            continue
         forward_headers[key] = value
+    forward_headers["host"] = "localhost"
 
     body = await request.body()
 
