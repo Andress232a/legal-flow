@@ -467,6 +467,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
 
         from django.db.models import Count
+
         user = request.user
         user_type = getattr(user, "user_type", None)
         cases = Case.objects.all()

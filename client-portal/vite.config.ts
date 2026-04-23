@@ -2,14 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-/** En Docker: servicio `api_gateway`. En local: localhost. */
 const apiHost = process.env.LEGALFLOW_API_HOST ?? 'localhost'
 const gatewayPort = process.env.LEGALFLOW_GATEWAY_PORT ?? '8080'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 3000,
+    port: 3001,
     host: true,
     proxy: {
       '/api': {

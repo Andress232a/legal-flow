@@ -51,6 +51,37 @@ services:
       retries: 5
 
   # ========================
+  # API Gateway (entrada única)
+  # ========================
+  api_gateway:
+    build:
+      context: ./services/api_gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      iam_service:
+        condition: service_started
+      document_service:
+        condition: service_started
+      matter_service:
+        condition: service_started
+      time_tracking_service:
+        condition: service_started
+      billing_service:
+        condition: service_started
+      calendar_service:
+        condition: service_started
+      analytics_service:
+        condition: service_started
+      client_portal_service:
+        condition: service_started
+
+  # ========================
   # IAM Service
   # ========================
   iam_service:
@@ -77,6 +108,7 @@ services:
       - DATABASE_PORT=3306
       - CELERY_BROKER_URL=redis://redis:6379/0
       - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_iam:
         condition: service_healthy
@@ -131,6 +163,7 @@ services:
       - DATABASE_PORT=3306
       - CELERY_BROKER_URL=redis://redis:6379/0
       - IAM_SERVICE_URL=http://iam_service:8001
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_documents:
         condition: service_healthy
@@ -175,14 +208,33 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     environment:
-      LEGALFLOW_API_HOST: host.docker.internal
+      LEGALFLOW_API_HOST: api_gateway
+      LEGALFLOW_GATEWAY_PORT: "8080"
     command: >
       sh -c "(npm ci || npm install) && npm run dev -- --host 0.0.0.0"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
-      - iam_service
-      - document_service
+      api_gateway:
+        condition: service_started
+
+  # ========================
+  # Client Portal (frontend)
+  # ========================
+  client_portal_frontend:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./client-portal:/app
+      - client_portal_node_modules:/app/node_modules
+    environment:
+      LEGALFLOW_API_HOST: api_gateway
+      LEGALFLOW_GATEWAY_PORT: "8080"
+    command: >
+      sh -c "(npm ci || npm install) && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      api_gateway:
+        condition: service_started
 
   mysql_matters:
     image: mysql:8.0
@@ -231,6 +283,7 @@ services:
       - IAM_SERVICE_URL=http://iam_service:8001
       - CALENDAR_SERVICE_URL=http://calendar_service:8006
       - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_matters:
         condition: service_healthy
@@ -309,6 +362,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - IAM_SERVICE_URL=http://iam_service:8001
       - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_timetracking:
         condition: service_healthy
@@ -383,6 +437,7 @@ services:
       - IAM_SERVICE_URL=http://iam_service:8001/api
       - CELERY_BROKER_URL=redis://redis:6379/0
       - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_billing:
         condition: service_healthy
@@ -434,12 +489,121 @@ services:
       - IAM_SERVICE_URL=http://iam_service:8001/api
       - CELERY_BROKER_URL=redis://redis:6379/0
       - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
     depends_on:
       mysql_calendar:
         condition: service_healthy
       redis:
         condition: service_healthy
       iam_service:
+        condition: service_started
+
+  # ─── MySQL Analytics ─────────────────────────────────────────────────────────
+  mysql_analytics:
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3313:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=${ANALYTICS_DB_ROOT_PASSWORD:-root_secret}
+      - MYSQL_DATABASE=${ANALYTICS_DB_NAME:-legalflow_analytics}
+      - MYSQL_USER=${ANALYTICS_DB_USER:-legalflow}
+      - MYSQL_PASSWORD=${ANALYTICS_DB_PASSWORD:-legalflow_secret}
+    volumes:
+      - mysql_analytics_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  analytics_service:
+    build:
+      context: ./services/analytics_service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8007"
+    volumes:
+      - ./services/analytics_service:/app
+    ports:
+      - "8007:8007"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${ANALYTICS_DB_NAME:-legalflow_analytics}
+      - DATABASE_USER=${ANALYTICS_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${ANALYTICS_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_analytics
+      - DATABASE_PORT=3306
+      - MATTER_SERVICE_URL=http://matter_service:8003/api
+      - DOCUMENT_SERVICE_URL=http://document_service:8002/api
+      - TIME_SERVICE_URL=http://time_tracking_service:8004/api
+      - BILLING_SERVICE_URL=http://billing_service:8005/api
+      - CALENDAR_SERVICE_URL=http://calendar_service:8006/api
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      mysql_analytics:
+        condition: service_healthy
+      matter_service:
+        condition: service_started
+      document_service:
+        condition: service_started
+      time_tracking_service:
+        condition: service_started
+      billing_service:
+        condition: service_started
+      calendar_service:
+        condition: service_started
+
+  # ─── MySQL Client Portal ─────────────────────────────────────────────────────────
+  mysql_portal:
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3314:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=${PORTAL_DB_ROOT_PASSWORD:-root_secret}
+      - MYSQL_DATABASE=${PORTAL_DB_NAME:-legalflow_portal}
+      - MYSQL_USER=${PORTAL_DB_USER:-legalflow}
+      - MYSQL_PASSWORD=${PORTAL_DB_PASSWORD:-legalflow_secret}
+    volumes:
+      - mysql_portal_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  client_portal_service:
+    build:
+      context: ./services/client_portal_service
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8008"
+    volumes:
+      - ./services/client_portal_service:/app
+    ports:
+      - "8008:8008"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${PORTAL_DB_NAME:-legalflow_portal}
+      - DATABASE_USER=${PORTAL_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${PORTAL_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql_portal
+      - DATABASE_PORT=3306
+      - MATTER_SERVICE_URL=http://matter_service:8003/api
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      mysql_portal:
+        condition: service_healthy
+      matter_service:
         condition: service_started
 
 volumes:
@@ -449,5 +613,8 @@ volumes:
   mysql_timetracking_data:
   mysql_billing_data:
   mysql_calendar_data:
+  mysql_analytics_data:
+  mysql_portal_data:
   document_storage:
   frontend_node_modules:
+  client_portal_node_modules:

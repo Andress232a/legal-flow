@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Users, Shield, Key, FileText, Scale, Clock, DollarSign, CalendarDays, ArrowUpRight } from 'lucide-react';
+import {
+  Users, Shield, Key, FileText, Scale, Clock, DollarSign, CalendarDays, ArrowUpRight, Briefcase, Receipt, Calendar,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Card from '../components/ui/Card';
@@ -7,6 +9,14 @@ import { usersApi } from '../api/users';
 import { rolesApi } from '../api/roles';
 import { permissionsApi } from '../api/permissions';
 import { casesApi } from '../api/cases';
+import { analyticsApi } from '../api/analytics';
+
+interface Kpis {
+  cases: number | null;
+  time_entries: number | null;
+  invoices: number | null;
+  calendar_events: number | null;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -16,6 +26,7 @@ export default function Dashboard() {
 
   const [adminStats, setAdminStats] = useState({ users: 0, roles: 0, permissions: 0 });
   const [caseStats, setCaseStats] = useState({ total: 0, open: 0, urgent: 0, closed: 0 });
+  const [kpis, setKpis] = useState<Kpis | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,8 +44,19 @@ export default function Dashboard() {
             permissions: permsRes?.count ?? 0,
           });
         }
-        const cs = await casesApi.stats().catch(() => null);
+        const [cs, k] = await Promise.all([
+          casesApi.stats().catch(() => null),
+          analyticsApi.kpis().catch(() => null),
+        ]);
         if (cs) setCaseStats({ total: cs.total, open: cs.open, urgent: cs.urgent, closed: cs.closed });
+        if (k) {
+          setKpis({
+            cases: k.cases,
+            time_entries: k.time_entries,
+            invoices: k.invoices,
+            calendar_events: k.calendar_events,
+          });
+        }
       } catch { /* empty */ }
       setLoading(false);
     }
@@ -44,6 +66,15 @@ export default function Dashboard() {
   const roleLabel: Record<string, string> = {
     admin: 'Administrador', lawyer: 'Abogado', assistant: 'Asistente Legal', client: 'Cliente',
   };
+
+  const kpiCards = kpis
+    ? [
+        { title: 'Casos (ámbito usuario)', value: kpis.cases, icon: Briefcase, color: 'bg-slate-600' },
+        { title: 'Registros de tiempo', value: kpis.time_entries, icon: Clock, color: 'bg-cyan-600' },
+        { title: 'Facturas', value: kpis.invoices, icon: Receipt, color: 'bg-rose-600' },
+        { title: 'Eventos / plazos', value: kpis.calendar_events, icon: Calendar, color: 'bg-indigo-600' },
+      ]
+    : [];
 
   return (
     <div className="space-y-8">
@@ -84,6 +115,32 @@ export default function Dashboard() {
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {kpiCards.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold text-surface-900">Resumen operativo</h2>
+          <p className="mb-4 text-sm text-surface-500">
+            Cifras agregadas vía Analytics Service (según tu rol y permisos en cada servicio).
+          </p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {kpiCards.map((stat) => (
+              <Card key={stat.title} className="relative overflow-hidden">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-surface-500">{stat.title}</p>
+                    <p className="mt-2 text-3xl font-bold text-surface-900">
+                      {stat.value == null ? '—' : stat.value}
+                    </p>
+                  </div>
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.color} shadow-lg`}>
+                    <stat.icon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

@@ -30,6 +30,11 @@ const calendarClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+const analyticsClient = axios.create({
+  baseURL: '/api/analytics-service',
+  headers: { 'Content-Type': 'application/json' },
+});
+
 function attachInterceptors(instance: typeof iamClient) {
   instance.interceptors.request.use((config) => {
     const token = localStorage.getItem('access_token');
@@ -70,5 +75,6 @@ attachInterceptors(matterClient);
 attachInterceptors(timeClient);
 attachInterceptors(billingClient);
 attachInterceptors(calendarClient);
+attachInterceptors(analyticsClient);
 
-export { iamClient, docClient, matterClient, timeClient, billingClient, calendarClient };
+export { iamClient, docClient, matterClient, timeClient, billingClient, calendarClient, analyticsClient };

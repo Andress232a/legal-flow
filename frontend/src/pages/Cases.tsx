@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Scale, Plus, Search, RefreshCw, X, AlertTriangle, Clock,
-  ChevronRight, Users, Calendar, Activity, Tag, FileText,
+  ChevronRight, Users, Calendar, Activity, Tag,
   CheckCircle, Circle, Gavel, Briefcase, Heart, Building2,
   Hammer, BookOpen, Layers, MoreHorizontal, Trash2, Edit,
   Shield,
@@ -391,7 +391,7 @@ function ChangeStatusModal({ caseItem, onClose, onSuccess }: { caseItem: Case; o
 // ─── Case Detail Modal ─────────────────────────────────────────────────────────
 
 function CaseDetailModal({ caseItem, onClose, onRefresh, userType }: { caseItem: Case; onClose: () => void; onRefresh: () => void; userType: string }) {
-  const canEdit = userType === 'admin' || userType === 'lawyer';
+  const canEdit = userType === 'admin' || userType === 'lawyer' || userType === 'assistant';
   const isClient = userType === 'client';
   const [tab, setTab] = useState<'info' | 'parties' | 'dates' | 'activity'>('info');
   const [parties, setParties] = useState<CaseParty[]>([]);
