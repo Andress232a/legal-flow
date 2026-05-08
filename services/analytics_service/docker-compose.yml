@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${ANALYTICS_DB_NAME:-legalflow_analytics}
+      MYSQL_USER: ${ANALYTICS_DB_USER:-legalflow}
+      MYSQL_PASSWORD: ${ANALYTICS_DB_PASSWORD:-legalflow_secret}
+      MYSQL_ROOT_PASSWORD: ${ANALYTICS_DB_ROOT_PASSWORD:-root_secret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_NAME=${ANALYTICS_DB_NAME:-legalflow_analytics}
+      - DATABASE_USER=${ANALYTICS_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${ANALYTICS_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - MATTER_SERVICE_URL=${MATTER_SERVICE_URL:-http://localhost:8003}/api
+      - DOCUMENT_SERVICE_URL=${DOCUMENT_SERVICE_URL:-http://localhost:8002}/api
+      - TIME_SERVICE_URL=${TIME_SERVICE_URL:-http://localhost:8004}/api
+      - BILLING_SERVICE_URL=${BILLING_SERVICE_URL:-http://localhost:8005}/api
+      - CALENDAR_SERVICE_URL=${CALENDAR_SERVICE_URL:-http://localhost:8006}/api
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

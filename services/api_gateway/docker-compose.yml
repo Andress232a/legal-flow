@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  api_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8080"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+      - IAM_SERVICE_URL=${IAM_SERVICE_URL:-http://localhost:8001}
+      - DOCUMENT_SERVICE_URL=${DOCUMENT_SERVICE_URL:-http://localhost:8002}
+      - MATTER_SERVICE_URL=${MATTER_SERVICE_URL:-http://localhost:8003}
+      - TIME_SERVICE_URL=${TIME_SERVICE_URL:-http://localhost:8004}
+      - BILLING_SERVICE_URL=${BILLING_SERVICE_URL:-http://localhost:8005}
+      - CALENDAR_SERVICE_URL=${CALENDAR_SERVICE_URL:-http://localhost:8006}
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL:-http://localhost:8007}
+      - PORTAL_SERVICE_URL=${PORTAL_SERVICE_URL:-http://localhost:8008}
