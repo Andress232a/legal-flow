@@ -194,7 +194,7 @@ function EventCard({ event, onComplete, onClick }: {
                 {event.title}
               </p>
               {event.is_legal_deadline && (
-                <Scale className="h-3.5 w-3.5 text-red-500 shrink-0" title="Plazo procesal" />
+                <Scale className="h-3.5 w-3.5 text-red-500 shrink-0" />
               )}
               {event.priority === 'critical' && (
                 <Flag className="h-3.5 w-3.5 text-orange-500 shrink-0" />
