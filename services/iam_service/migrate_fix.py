@@ -7,11 +7,11 @@ from django.db import connection
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-# Limpiar conflictos de migraciones
+print("Limpiando tabla de migraciones...")
 with connection.cursor() as cursor:
-    cursor.execute("DELETE FROM django_migrations WHERE app='admin' AND name='0001_initial'")
+    cursor.execute("TRUNCATE TABLE django_migrations")
 
-print("✓ BD limpia de conflictos")
-print("Ejecutando migraciones...")
+print("✓ Tabla limpia")
+print("Ejecutando migraciones desde cero...")
 call_command('migrate', '--noinput', verbosity=2)
 print("✓ Migraciones completadas")
