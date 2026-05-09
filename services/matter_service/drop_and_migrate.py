@@ -13,10 +13,17 @@ with connection.cursor() as cursor:
     cursor.execute("SHOW TABLES")
     tables = [row[0] for row in cursor.fetchall()]
 
+    # Crear lista de DROP statements
+    drop_statements = []
     for table in tables:
         if table.startswith(('django_', 'auth_', 'users', 'contenttypes_')):
-            cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
-            print(f"✓ Borrada tabla: {table}")
+            drop_statements.append(f"DROP TABLE IF EXISTS `{table}`")
+
+    # Ejecutar todos los DROP en una sola sesión
+    for stmt in drop_statements:
+        cursor.execute(stmt)
+        table_name = stmt.split('`')[1]
+        print(f"✓ Borrada tabla: {table_name}")
 
     cursor.execute("SET FOREIGN_KEY_CHECKS=1")
 
