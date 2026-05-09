@@ -150,7 +150,9 @@ async def gateway_proxy(full_path: str, request: Request):
         if key.lower() == "host":
             continue
         forward_headers[key] = value
-    forward_headers["host"] = "localhost"
+    from urllib.parse import urlparse
+    upstream_host = urlparse(target_url).netloc
+    forward_headers["host"] = upstream_host
 
     body = await request.body()
 
