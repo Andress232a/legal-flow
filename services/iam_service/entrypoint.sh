@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "Ejecutando migraciones..."
-python manage.py migrate --run-syncdb --noinput
-echo "Migraciones completadas"
+echo "Limpiando y migrando BD..."
+python drop_and_migrate.py
 
 echo "Creando usuario admin..."
 python manage.py seed_admin
