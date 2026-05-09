@@ -1,37 +1,39 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+
 const iamClient = axios.create({
-  baseURL: '/api/iam',
+  baseURL: `${baseURL}/api/iam`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const docClient = axios.create({
-  baseURL: '/api/docs-service',
+  baseURL: `${baseURL}/api/docs-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const matterClient = axios.create({
-  baseURL: '/api/matters-service',
+  baseURL: `${baseURL}/api/matters-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const timeClient = axios.create({
-  baseURL: '/api/time-service',
+  baseURL: `${baseURL}/api/time-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const billingClient = axios.create({
-  baseURL: '/api/billing-service',
+  baseURL: `${baseURL}/api/billing-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const calendarClient = axios.create({
-  baseURL: '/api/calendar-service',
+  baseURL: `${baseURL}/api/calendar-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
 const analyticsClient = axios.create({
-  baseURL: '/api/analytics-service',
+  baseURL: `${baseURL}/api/analytics-service`,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -53,7 +55,7 @@ function attachInterceptors(instance: typeof iamClient) {
         const refresh = localStorage.getItem('refresh_token');
         if (refresh) {
           try {
-            const { data } = await axios.post('/api/iam/token/refresh/', { refresh });
+            const { data } = await axios.post(`${baseURL}/api/iam/token/refresh/`, { refresh });
             localStorage.setItem('access_token', data.access);
             original.headers.Authorization = `Bearer ${data.access}`;
             return instance(original);
