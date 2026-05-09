@@ -2,7 +2,7 @@
 set -e
 
 echo "Ejecutando migraciones..."
-python migrate_fix.py
+python manage.py migrate --run-syncdb --noinput
 echo "Migraciones completadas"
 
 echo "Creando usuario admin..."

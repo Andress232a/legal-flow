@@ -2,7 +2,7 @@
 set -e
 
 echo "Ejecutando migraciones..."
-python manage.py migrate --noinput
+python manage.py migrate --run-syncdb --noinput
 echo "Migraciones completadas"
 
 echo "Iniciando servidor..."
