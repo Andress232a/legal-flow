@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "Esperando a que la base de datos esté lista..."
-python manage.py migrate --noinput
+echo "Ejecutando migraciones..."
+python manage.py migrate --noinput --fake-initial
 echo "Migraciones completadas"
 
 echo "Creando usuario admin..."
