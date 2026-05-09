@@ -2,7 +2,7 @@
 set -e
 
 echo "Ejecutando migraciones..."
-python manage.py migrate --noinput
+python migrate_fix.py
 echo "Migraciones completadas"
 
 echo "Creando usuario admin..."
