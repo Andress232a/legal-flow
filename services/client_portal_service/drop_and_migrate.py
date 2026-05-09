@@ -9,6 +9,7 @@ django.setup()
 
 print("Borrando tablas Django...")
 with connection.cursor() as cursor:
+    cursor.execute("SET FOREIGN_KEY_CHECKS=0")
     cursor.execute("SHOW TABLES")
     tables = [row[0] for row in cursor.fetchall()]
 
@@ -16,6 +17,8 @@ with connection.cursor() as cursor:
         if table.startswith(('django_', 'auth_', 'users', 'contenttypes_')):
             cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
             print(f"✓ Borrada tabla: {table}")
+
+    cursor.execute("SET FOREIGN_KEY_CHECKS=1")
 
 print("Ejecutando migraciones...")
 call_command('migrate', '--noinput', verbosity=2)
