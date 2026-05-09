@@ -15,6 +15,25 @@ API Gateway: https://apigateway-production-a040.up.railway.app
 
 ---
 
+## API Gateway (IMPORTANTE: Nombres variables CORRECTOS)
+**Railway Project:** apigateway-production
+**Variables to Add:**
+```
+SECRET_KEY=your_secret_key_here
+DEBUG=False
+UPSTREAM_IAM=https://iamservice-production.up.railway.app/api
+UPSTREAM_DOCUMENT=https://documentservice-production-2877.up.railway.app/api
+UPSTREAM_MATTER=https://matterservice-production.up.railway.app/api
+UPSTREAM_TIME=https://timetrackingservice-production.up.railway.app/api
+UPSTREAM_BILLING=https://billingservice-production-a8c9.up.railway.app/api
+UPSTREAM_CALENDAR=https://calendarservice-production-31fb.up.railway.app/api
+UPSTREAM_ANALYTICS=https://analyticsservice-production-1c85.up.railway.app/api
+UPSTREAM_PORTAL=https://clientportalservice-production.up.railway.app/api
+CORS_ORIGINS=*
+```
+
+---
+
 ## 1. IAM Service
 **Railway Project:** iamservice-production
 **Variables to Add:**
@@ -69,7 +88,7 @@ ALLOWED_HOSTS=*
 ```
 SECRET_KEY=your_secret_key_here
 DEBUG=False
-IAM_SERVICE_URL=https://iamservice-production.up.railway.app
+IAM_SERVICE_URL=https://iamservice-production.up.railway.app/api
 ALLOWED_HOSTS=*
 ```
 
@@ -81,7 +100,7 @@ ALLOWED_HOSTS=*
 ```
 SECRET_KEY=your_secret_key_here
 DEBUG=False
-IAM_SERVICE_URL=https://iamservice-production.up.railway.app
+IAM_SERVICE_URL=https://iamservice-production.up.railway.app/api
 ALLOWED_HOSTS=*
 ```
 
@@ -115,26 +134,7 @@ ALLOWED_HOSTS=*
 
 ---
 
-## 9. API Gateway
-**Railway Project:** apigateway-production
-**Variables to Add:**
-```
-SECRET_KEY=your_secret_key_here
-DEBUG=False
-IAM_SERVICE_URL=https://iamservice-production.up.railway.app
-DOCUMENT_SERVICE_URL=https://documentservice-production-2877.up.railway.app
-MATTER_SERVICE_URL=https://matterservice-production.up.railway.app
-TIME_SERVICE_URL=https://timetrackingservice-production.up.railway.app
-BILLING_SERVICE_URL=https://billingservice-production-a8c9.up.railway.app
-CALENDAR_SERVICE_URL=https://calendarservice-production-31fb.up.railway.app
-ANALYTICS_SERVICE_URL=https://analyticsservice-production-1c85.up.railway.app
-PORTAL_SERVICE_URL=https://clientportalservice-production.up.railway.app
-ALLOWED_HOSTS=*
-```
-
----
-
-## 10. Vercel - Frontend
+## 9. Vercel - Frontend
 **Project:** frontend
 **Environment Variables:**
 ```
@@ -143,7 +143,7 @@ VITE_API_BASE_URL=https://apigateway-production-a040.up.railway.app
 
 ---
 
-## 11. Vercel - Client Portal
+## 10. Vercel - Client Portal
 **Project:** client-portal
 **Environment Variables:**
 ```
@@ -156,7 +156,7 @@ VITE_API_BASE_URL=https://apigateway-production-a040.up.railway.app
 
 ### For Each Railway Service:
 1. Go to railway.app
-2. Click on the project (e.g., iamservice-production)
+2. Click on the project (e.g., apigateway-production)
 3. Click on "Variables" tab
 4. Add each variable from the list above
 5. Redeploy (should auto-redeploy when vars change)
@@ -174,7 +174,7 @@ VITE_API_BASE_URL=https://apigateway-production-a040.up.railway.app
 ## Test
 After all configured:
 1. Open frontend URL in browser
-2. Try to login
+2. Try to login with admin / Admin1234!
 3. Check if services communicate
 
 If error → check Railway logs
