@@ -53,11 +53,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ.get("DATABASE_NAME", "legalflow_analytics"),
-        "USER": os.environ.get("DATABASE_USER", "legalflow"),
-        "PASSWORD": os.environ.get("DATABASE_PASSWORD", "legalflow_secret"),
-        "HOST": os.environ.get("DATABASE_HOST", "localhost"),
-        "PORT": os.environ.get("DATABASE_PORT", "3313"),
+        "NAME": os.environ.get("MYSQL_DATABASE") or os.environ.get("DATABASE_NAME", "legalflow_analytics"),
+        "USER": os.environ.get("MYSQL_USER") or os.environ.get("DATABASE_USER", "legalflow"),
+        "PASSWORD": os.environ.get("MYSQL_PASSWORD") or os.environ.get("DATABASE_PASSWORD", "legalflow_secret"),
+        "HOST": os.environ.get("MYSQL_HOST") or os.environ.get("DATABASE_HOST", "localhost"),
+        "PORT": os.environ.get("MYSQL_PORT") or os.environ.get("DATABASE_PORT", "3306"),
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
