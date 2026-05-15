@@ -41,5 +41,8 @@ print("Ejecutando migraciones...")
 call_command('migrate', '--noinput', verbosity=2)
 
 print("Creando usuario admin...")
-call_command('seed_admin')
-print("✓ Usuario admin creado")
+try:
+    call_command('seed_admin')
+    print("✓ Usuario admin creado")
+except Exception as e:
+    print(f"⚠ Error seed_admin (continuando): {e}")
