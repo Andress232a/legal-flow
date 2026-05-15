@@ -10,6 +10,8 @@ import {
   Clock,
   DollarSign,
   CalendarDays,
+  BarChart3,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +22,7 @@ const adminNavigation = [
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Facturación', href: '/billing', icon: DollarSign },
   { name: 'Calendario', href: '/calendar', icon: CalendarDays },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Usuarios', href: '/users', icon: Users },
   { name: 'Roles', href: '/roles', icon: Shield },
   { name: 'Permisos', href: '/permissions', icon: Key },
@@ -32,10 +35,11 @@ const lawyerNavigation = [
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Facturación', href: '/billing', icon: DollarSign },
   { name: 'Calendario', href: '/calendar', icon: CalendarDays },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
 ];
 
 const clientNavigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Mi Portal', href: '/client-portal', icon: Building2 },
   { name: 'Mis Casos', href: '/cases', icon: Scale },
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Facturación', href: '/billing', icon: DollarSign },

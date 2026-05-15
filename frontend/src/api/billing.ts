@@ -1,5 +1,5 @@
 import { billingClient } from './client';
-import type { Invoice, InvoiceItem, Payment, InvoiceStats, PaginatedResponse } from '../types';
+import type { Invoice, InvoiceItem, Payment, InvoiceStats, FeeStructure, PaginatedResponse } from '../types';
 
 export const billingApi = {
   list: async (params?: {
@@ -86,8 +86,50 @@ export const billingApi = {
     return data;
   },
 
+  send: async (id: string): Promise<Invoice> => {
+    const { data } = await billingClient.post(`/invoices/${id}/send/`);
+    return data;
+  },
+
   stats: async (): Promise<InvoiceStats> => {
     const { data } = await billingClient.get('/invoices/stats/');
     return data;
+  },
+
+  feeStructures: {
+    list: async (params?: { case_id?: string; fee_type?: string }): Promise<PaginatedResponse<FeeStructure>> => {
+      const { data } = await billingClient.get('/fee-structures/', { params });
+      return data;
+    },
+    get: async (id: string): Promise<FeeStructure> => {
+      const { data } = await billingClient.get(`/fee-structures/${id}/`);
+      return data;
+    },
+    create: async (payload: {
+      case_id: string;
+      fee_type: 'flat_rate' | 'hourly' | 'success_fee';
+      flat_amount?: string;
+      hourly_rate?: string;
+      success_percentage?: string;
+      estimated_case_value?: string;
+      notes?: string;
+    }): Promise<FeeStructure> => {
+      const { data } = await billingClient.post('/fee-structures/', payload);
+      return data;
+    },
+    update: async (id: string, payload: Partial<{
+      fee_type: string;
+      flat_amount: string;
+      hourly_rate: string;
+      success_percentage: string;
+      estimated_case_value: string;
+      notes: string;
+    }>): Promise<FeeStructure> => {
+      const { data } = await billingClient.patch(`/fee-structures/${id}/`, payload);
+      return data;
+    },
+    delete: async (id: string): Promise<void> => {
+      await billingClient.delete(`/fee-structures/${id}/`);
+    },
   },
 };

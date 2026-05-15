@@ -311,6 +311,23 @@ export interface InvoiceStats {
   total_pending: string;
 }
 
+export type FeeType = 'flat_rate' | 'hourly' | 'success_fee';
+
+export interface FeeStructure {
+  id: string;
+  case_id: string;
+  fee_type: FeeType;
+  fee_type_display: string;
+  flat_amount: string | null;
+  hourly_rate: string | null;
+  success_percentage: string | null;
+  estimated_case_value: string | null;
+  notes: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
 export type EventType = 'hearing' | 'deadline' | 'filing' | 'trial' | 'appeal' | 'notification' | 'meeting' | 'payment' | 'other';

@@ -3,18 +3,19 @@ from decimal import Decimal
 
 from django.db.models import Sum, Count, Q
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
-from apps.billing.models import Invoice, InvoiceItem, Payment
+from apps.billing.models import Invoice, InvoiceItem, Payment, FeeStructure
 from apps.billing.api.serializers import (
     InvoiceListSerializer, InvoiceDetailSerializer,
     InvoiceCreateSerializer, InvoiceUpdateSerializer,
     InvoiceItemSerializer, InvoiceItemCreateSerializer,
     PaymentSerializer, PaymentCreateSerializer,
     InvoiceStatsSerializer,
+    FeeStructureSerializer, FeeStructureCreateSerializer,
 )
 from apps.billing.iam_client import check_permission
 
@@ -176,3 +177,90 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             "total_paid": total_paid,
             "total_pending": total_billed - total_paid,
         })
+
+    @extend_schema(summary="Enviar factura al cliente (cambia estado a 'sent')")
+    @action(detail=True, methods=["post"], url_path="send")
+    def send_invoice(self, request, pk=None):
+        invoice = self.get_object()
+        if not check_permission(request.user.id, "update", "invoice", str(invoice.id)):
+            return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
+        if invoice.status != Invoice.Status.DRAFT:
+            return Response(
+                {"detail": "Solo se pueden enviar facturas en borrador."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        invoice.status = Invoice.Status.SENT
+        invoice.save(update_fields=["status"])
+        logger.info("Factura %s enviada al cliente %s", invoice.invoice_number, invoice.client_id)
+        return Response(InvoiceDetailSerializer(invoice).data)
+
+
+class FeeStructureViewSet(viewsets.ModelViewSet):
+    """CRUD de estructuras de honorarios por caso."""
+    http_method_names = ["get", "post", "patch", "delete"]
+    filterset_fields = ["case_id", "fee_type"]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "partial_update", "update"):
+            return FeeStructureCreateSerializer
+        return FeeStructureSerializer
+
+    def get_queryset(self):
+        return FeeStructure.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        if not check_permission(request.user.id, "create", "invoice"):
+            return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = FeeStructureCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        fee = serializer.save(created_by=request.user.id)
+        return Response(FeeStructureSerializer(fee).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        if not check_permission(request.user.id, "update", "invoice"):
+            return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
+        instance = self.get_object()
+        serializer = FeeStructureCreateSerializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        fee = serializer.save()
+        return Response(FeeStructureSerializer(fee).data)
+
+    def destroy(self, request, *args, **kwargs):
+        if not check_permission(request.user.id, "delete", "invoice"):
+            return Response({"detail": "Sin permiso."}, status=status.HTTP_403_FORBIDDEN)
+        self.get_object().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(summary="Webhook: caso cerrado — genera factura automática")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def case_closed_webhook(request):
+    """
+    Endpoint interno llamado por Matter Service cuando un caso cambia a 'closed'.
+    Genera una factura borrador automáticamente usando la FeeStructure del caso.
+    """
+    data = request.data
+    case_id = data.get("case_id")
+    client_id = data.get("client_id")
+    lawyer_id = data.get("lawyer_id")
+    case_number = data.get("case_number", "")
+    client_name = data.get("client_name", "")
+
+    if not all([case_id, client_id, lawyer_id]):
+        return Response({"detail": "Faltan campos requeridos: case_id, client_id, lawyer_id."}, status=400)
+
+    # Evitar duplicados: si ya existe factura para este caso no crear otra
+    existing = Invoice.objects.filter(case_id=case_id).exclude(status=Invoice.Status.CANCELLED).first()
+    if existing:
+        return Response({
+            "detail": "Ya existe una factura para este caso.",
+            "invoice_id": str(existing.id),
+            "invoice_number": existing.invoice_number,
+        })
+
+    from apps.billing.tasks import auto_invoice_from_case_closed
+    result = auto_invoice_from_case_closed.delay(
+        str(case_id), str(client_id), str(lawyer_id), case_number, client_name
+    )
+    return Response({"detail": "Factura en proceso de generación.", "task_id": result.id}, status=202)

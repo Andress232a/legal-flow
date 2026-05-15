@@ -13,6 +13,8 @@ import Cases from './pages/Cases';
 import TimeTracking from './pages/TimeTracking';
 import Billing from './pages/Billing';
 import Calendar from './pages/Calendar';
+import Analytics from './pages/Analytics';
+import ClientPortal from './pages/ClientPortal';
 
 export default function App() {
   return (
@@ -58,6 +60,20 @@ export default function App() {
             <Route path="/permissions" element={
               <RoleRoute allowed={['admin']}>
                 <Permissions />
+              </RoleRoute>
+            } />
+
+            {/* Analytics: admin y abogado */}
+            <Route path="/analytics" element={
+              <RoleRoute allowed={['admin', 'lawyer']}>
+                <Analytics />
+              </RoleRoute>
+            } />
+
+            {/* Client Portal: solo cliente */}
+            <Route path="/client-portal" element={
+              <RoleRoute allowed={['client']}>
+                <ClientPortal />
               </RoleRoute>
             } />
           </Route>

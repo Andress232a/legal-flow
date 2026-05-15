@@ -202,7 +202,14 @@ function InvoiceDetailModal({ invoice, onClose, onUpdated }: { invoice: Invoice;
   useEffect(() => { loadDetail(); }, []);
 
   const handleChangeStatus = async (s: string) => {
-    try { setDetail(await billingApi.changeStatus(invoice.id, s)); onUpdated(); } catch { /* empty */ }
+    try {
+      if (s === 'sent') {
+        setDetail(await billingApi.send(invoice.id));
+      } else {
+        setDetail(await billingApi.changeStatus(invoice.id, s));
+      }
+      onUpdated();
+    } catch { /* empty */ }
   };
 
   const handlePayment = async () => {

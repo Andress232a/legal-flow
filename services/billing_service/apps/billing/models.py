@@ -4,6 +4,65 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 
 
+class FeeStructure(models.Model):
+    """Estructura de honorarios para un caso. Define cómo se cobra al cliente."""
+
+    class FeeType(models.TextChoices):
+        FLAT_RATE = "flat_rate", "Tarifa Plana"
+        HOURLY = "hourly", "Por Hora"
+        SUCCESS_FEE = "success_fee", "Cuota de Éxito"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case_id = models.UUIDField(db_index=True, unique=True)
+    fee_type = models.CharField(max_length=20, choices=FeeType.choices, default=FeeType.HOURLY)
+
+    # Tarifa plana: monto fijo independiente de horas
+    flat_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="Monto fijo para tarifa plana",
+    )
+    # Por hora: precio por hora trabajada
+    hourly_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="Precio por hora (tipo hourly)",
+    )
+    # Cuota de éxito: porcentaje del valor del caso al ganarlo
+    success_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="Porcentaje del valor del caso (tipo success_fee, ej: 20.00)",
+    )
+    estimated_case_value = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="Valor estimado del caso (para calcular cuota de éxito)",
+    )
+
+    notes = models.TextField(blank=True)
+    created_by = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "fee_structures"
+
+    def __str__(self):
+        return f"Estructura {self.fee_type} — Caso {self.case_id}"
+
+    def calculate_amount(self, hours_worked: Decimal = Decimal("0")) -> Decimal:
+        """Calcula el monto a facturar según el tipo de tarifa."""
+        if self.fee_type == self.FeeType.FLAT_RATE:
+            return self.flat_amount or Decimal("0")
+        if self.fee_type == self.FeeType.HOURLY:
+            return ((self.hourly_rate or Decimal("0")) * hours_worked).quantize(Decimal("0.01"))
+        if self.fee_type == self.FeeType.SUCCESS_FEE:
+            value = self.estimated_case_value or Decimal("0")
+            pct = (self.success_percentage or Decimal("0")) / Decimal("100")
+            return (value * pct).quantize(Decimal("0.01"))
+        return Decimal("0")
+
+
 class Invoice(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Borrador"

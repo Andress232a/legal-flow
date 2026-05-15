@@ -274,6 +274,24 @@ class CaseViewSet(viewsets.ModelViewSet):
                 "closed_by": str(request.user.id),
                 "closed_at": case.closed_at.isoformat() if case.closed_at else None,
             })
+            # Notifica a Billing Service para generar factura automática
+            try:
+                from apps.matters.billing_client import notify_case_closed
+                client_id = str(case.client_id) if case.client_id else ""
+                lawyer_id = str(case.assigned_lawyer_id) if case.assigned_lawyer_id else ""
+                client_name = ""
+                for party in case.parties.filter(role="client"):
+                    client_name = party.name
+                    break
+                notify_case_closed(
+                    case_id=str(case.id),
+                    client_id=client_id,
+                    lawyer_id=lawyer_id,
+                    case_number=case.case_number,
+                    client_name=client_name,
+                )
+            except Exception:
+                logger.exception("Error al notificar cierre de caso %s a Billing Service", case.id)
 
         return Response(CaseDetailSerializer(case).data)
 

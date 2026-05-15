@@ -120,6 +120,7 @@ IAM_SERVICE_URL = os.environ.get("IAM_SERVICE_URL", "http://localhost:8001")
 
 # URL del Calendar Service para sincronización de fechas
 CALENDAR_SERVICE_URL = os.environ.get("CALENDAR_SERVICE_URL", "http://localhost:8006")
+BILLING_SERVICE_URL = os.environ.get("BILLING_SERVICE_URL", "http://billing_service:8005")
 
 LANGUAGE_CODE = "es"
 TIME_ZONE = "UTC"

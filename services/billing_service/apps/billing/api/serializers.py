@@ -1,6 +1,39 @@
 from rest_framework import serializers
-from apps.billing.models import Invoice, InvoiceItem, Payment
+from apps.billing.models import Invoice, InvoiceItem, Payment, FeeStructure
 from decimal import Decimal
+
+
+class FeeStructureSerializer(serializers.ModelSerializer):
+    fee_type_display = serializers.CharField(source="get_fee_type_display", read_only=True)
+
+    class Meta:
+        model = FeeStructure
+        fields = (
+            "id", "case_id", "fee_type", "fee_type_display",
+            "flat_amount", "hourly_rate", "success_percentage",
+            "estimated_case_value", "notes", "created_by", "created_at", "updated_at",
+        )
+        read_only_fields = ("id", "created_by", "created_at", "updated_at")
+
+
+class FeeStructureCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeeStructure
+        fields = (
+            "case_id", "fee_type",
+            "flat_amount", "hourly_rate", "success_percentage",
+            "estimated_case_value", "notes",
+        )
+
+    def validate(self, data):
+        fee_type = data.get("fee_type")
+        if fee_type == FeeStructure.FeeType.FLAT_RATE and not data.get("flat_amount"):
+            raise serializers.ValidationError({"flat_amount": "Requerido para tarifa plana."})
+        if fee_type == FeeStructure.FeeType.HOURLY and not data.get("hourly_rate"):
+            raise serializers.ValidationError({"hourly_rate": "Requerido para tarifa por hora."})
+        if fee_type == FeeStructure.FeeType.SUCCESS_FEE and not data.get("success_percentage"):
+            raise serializers.ValidationError({"success_percentage": "Requerido para cuota de éxito."})
+        return data
 
 
 class InvoiceItemSerializer(serializers.ModelSerializer):

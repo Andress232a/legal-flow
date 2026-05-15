@@ -41,6 +41,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/calendar-service/, '/api'),
       },
+      '/api/analytics-service': {
+        target: `http://${apiHost}:8007`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/analytics-service/, '/api'),
+      },
+      '/api/client-portal-service': {
+        target: `http://${apiHost}:8008`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/client-portal-service/, '/api'),
+      },
     },
   },
 })
