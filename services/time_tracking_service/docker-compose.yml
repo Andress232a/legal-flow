@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${TIMETRACKING_DB_NAME:-legalflow_timetracking}
+      MYSQL_USER: ${TIMETRACKING_DB_USER:-legalflow}
+      MYSQL_PASSWORD: ${TIMETRACKING_DB_PASSWORD:-legalflow_secret}
+      MYSQL_ROOT_PASSWORD: ${TIMETRACKING_DB_ROOT_PASSWORD:-root_secret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  time_tracking:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py makemigrations time_tracking &&
+             python manage.py migrate &&
+             python manage.py seed_time_entries &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_NAME=${TIMETRACKING_DB_NAME:-legalflow_timetracking}
+      - DATABASE_USER=${TIMETRACKING_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${TIMETRACKING_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - IAM_SERVICE_URL=${IAM_SERVICE_URL:-http://localhost:8001}
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A config worker -l info
+    environment:
+      - DATABASE_NAME=${TIMETRACKING_DB_NAME:-legalflow_timetracking}
+      - DATABASE_USER=${TIMETRACKING_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${TIMETRACKING_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - IAM_SERVICE_URL=${IAM_SERVICE_URL:-http://localhost:8001}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

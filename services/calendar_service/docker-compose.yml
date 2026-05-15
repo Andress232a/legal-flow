@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${CALENDAR_DB_NAME:-legalflow_calendar}
+      MYSQL_USER: ${CALENDAR_DB_USER:-legalflow}
+      MYSQL_PASSWORD: ${CALENDAR_DB_PASSWORD:-legalflow_secret}
+      MYSQL_ROOT_PASSWORD: ${CALENDAR_DB_ROOT_PASSWORD:-root_secret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  calendar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py makemigrations calendar_app &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_NAME=${CALENDAR_DB_NAME:-legalflow_calendar}
+      - DATABASE_USER=${CALENDAR_DB_USER:-legalflow}
+      - DATABASE_PASSWORD=${CALENDAR_DB_PASSWORD:-legalflow_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - IAM_SERVICE_URL=${IAM_SERVICE_URL:-http://localhost:8001}/api
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - ALLOWED_HOSTS=*
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

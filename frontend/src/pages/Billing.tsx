@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   FileText, Plus, Search, DollarSign, CheckCircle, Clock,
   AlertTriangle, XCircle, ChevronRight, Trash2, CreditCard,
-  RefreshCw, Tag,
+  RefreshCw,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -41,7 +41,7 @@ function fmtDate(d: string) {
 // ─── Create Invoice Modal ─────────────────────────────────────────────────────
 
 function CreateInvoiceModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const { user: authUser } = useAuth();
+  useAuth();
   const [form, setForm] = useState({
     case_id: '', client_id: '', issue_date: '', due_date: '',
     tax_rate: '0', notes: '', case_number: '', client_name: '',

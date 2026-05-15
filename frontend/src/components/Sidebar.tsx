@@ -39,7 +39,6 @@ const clientNavigation = [
   { name: 'Mis Casos', href: '/cases', icon: Scale },
   { name: 'Documentos', href: '/documents', icon: FileText },
   { name: 'Facturación', href: '/billing', icon: DollarSign },
-  { name: 'Calendario', href: '/calendar', icon: CalendarDays },
 ];
 
 export default function Sidebar() {

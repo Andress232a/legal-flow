@@ -13,6 +13,7 @@ import Modal from '../components/ui/Modal';
 import { documentsApi } from '../api/documents';
 import { casesApi } from '../api/cases';
 import type { Document as DocType, DocumentVersion, Case } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Mappings ─────────────────────────────────────────────────────────────────
 
@@ -59,8 +60,9 @@ function DocTypeIcon({ type }: { type: string }) {
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 
-function DocumentDetailModal({ doc, onClose, onNewVersion }: {
+function DocumentDetailModal({ doc, onClose, onNewVersion, canManage }: {
   doc: DocType; onClose: () => void; onNewVersion: () => void;
+  canManage: boolean;
 }) {
   const [tab, setTab] = useState<'info' | 'versions' | 'audit'>('info');
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
@@ -138,9 +140,11 @@ function DocumentDetailModal({ doc, onClose, onNewVersion }: {
               <Button onClick={handleDownload} size="sm" className="flex-1">
                 <Download className="h-4 w-4" /> Descargar v{doc.current_version}
               </Button>
-              <Button variant="secondary" onClick={onNewVersion} size="sm">
-                <Plus className="h-4 w-4" /> Nueva versión
-              </Button>
+              {canManage && (
+                <Button variant="secondary" onClick={onNewVersion} size="sm">
+                  <Plus className="h-4 w-4" /> Nueva versión
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -383,6 +387,8 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Documents() {
+  const { user: authUser } = useAuth();
+  const canManage = authUser?.user_type !== 'client';
   const [documents, setDocuments] = useState<DocType[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -434,9 +440,11 @@ export default function Documents() {
           <h1 className="text-2xl font-bold text-surface-900">Documentos</h1>
           <p className="text-sm text-surface-500">Gestión documental con versionado completo y auditoría</p>
         </div>
-        <Button onClick={() => setShowUpload(true)}>
-          <Upload className="h-4 w-4" /> Subir Documento
-        </Button>
+        {canManage && (
+          <Button onClick={() => setShowUpload(true)}>
+            <Upload className="h-4 w-4" /> Subir Documento
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -548,10 +556,12 @@ export default function Documents() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={(e) => { e.stopPropagation(); setNewVersionDoc(doc); }}
-                            className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-700" title="Nueva versión">
-                            <Plus className="h-4 w-4" />
-                          </button>
+                          {canManage && (
+                            <button onClick={(e) => { e.stopPropagation(); setNewVersionDoc(doc); }}
+                              className="rounded-lg p-1.5 text-surface-400 hover:bg-surface-100 hover:text-surface-700" title="Nueva versión">
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
                           <button onClick={(e) => handleDownload(doc, e)}
                             className="rounded-lg p-1.5 text-surface-400 hover:bg-primary-50 hover:text-primary-600" title="Descargar">
                             <Download className="h-4 w-4" />
@@ -572,7 +582,14 @@ export default function Documents() {
       </Card>
 
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} onSuccess={() => fetchDocuments()} />}
-      {selectedDoc && <DocumentDetailModal doc={selectedDoc} onClose={() => setSelectedDoc(null)} onNewVersion={() => { setNewVersionDoc(selectedDoc); setSelectedDoc(null); }} />}
+      {selectedDoc && (
+        <DocumentDetailModal
+          doc={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onNewVersion={() => { setNewVersionDoc(selectedDoc); setSelectedDoc(null); }}
+          canManage={canManage}
+        />
+      )}
       {newVersionDoc && <NewVersionModal doc={newVersionDoc} onClose={() => setNewVersionDoc(null)} onSuccess={() => fetchDocuments()} />}
     </div>
   );
