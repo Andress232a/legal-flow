@@ -10,10 +10,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 db_config = settings.DATABASES['default']
-db_host = db_config.get('HOST', 'localhost')
-db_user = db_config.get('USER', 'root')
-db_password = db_config.get('PASSWORD', '')
-db_name = db_config.get('NAME')
+db_host = db_config['HOST']
+db_user = db_config['USER']
+db_password = db_config['PASSWORD']
+db_name = db_config['NAME']
 
 print("Cerrando conexiones Django...")
 connections.close_all()
