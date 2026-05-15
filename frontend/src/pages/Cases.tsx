@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Scale, Plus, Search, RefreshCw, X, AlertTriangle, Clock,
-  ChevronRight, Users, Calendar, Activity, Tag, FileText,
+  ChevronRight, Users, Calendar, Activity, Tag,
   CheckCircle, Circle, Gavel, Briefcase, Heart, Building2,
   Hammer, BookOpen, Layers, MoreHorizontal, Trash2, Edit,
   Shield,

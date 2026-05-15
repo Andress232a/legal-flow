@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Clock, Play, Pause, Square, Trash2, Plus, Search,
   RefreshCw, Timer, Briefcase, CheckCircle, DollarSign,
   X, FileText, Users, Gavel, BookOpen,
-  Coffee, Car, Wrench, MoreHorizontal, Scale,
+  Coffee, Car, Wrench,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';

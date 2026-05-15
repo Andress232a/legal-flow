@@ -52,10 +52,10 @@ export default function ClientPortal() {
       setLoading(true); setError('');
       try {
         const [casesRes, invRes, docsRes, timeRes] = await Promise.all([
-          casesApi.list({}).catch(() => ({ results: [] })),
-          billingApi.list({}).catch(() => ({ results: [] })),
-          documentsApi.list({}).catch(() => ({ results: [] })),
-          timeTrackingApi.list({}).catch(() => ({ results: [] })),
+          casesApi.listEntries().catch(() => ({ results: [] })),
+          billingApi.listEntries().catch(() => ({ results: [] })),
+          documentsApi.listEntries().catch(() => ({ results: [] })),
+          timeTrackingApi.listEntries().catch(() => ({ results: [] })),
         ]);
         setCases(Array.isArray(casesRes?.results) ? casesRes.results : []);
         setInvoices(Array.isArray(invRes?.results) ? invRes.results : []);
