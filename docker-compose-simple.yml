@@ -33,6 +33,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    volumes:
+      - ./api.key:/app/api.key:ro
+      - ./api.crt:/app/api.crt:ro
     env_file:
       - .env
     environment:
@@ -47,8 +50,6 @@ services:
       - PORTAL_SERVICE_URL=http://client_portal_service:8008/api
     depends_on:
       - iam_service
-    ports:
-      - "8080:8080"
 
   iam_service:
     build:
