@@ -38,7 +38,11 @@ cursor.close()
 conn.close()
 
 print("Ejecutando migraciones...")
-call_command('migrate', '--noinput', verbosity=2)
+try:
+    call_command('migrate', '--noinput', verbosity=2)
+    print("✓ Migraciones OK")
+except Exception as e:
+    print(f"⚠ Error migraciones (continuando): {e}")
 
 print("Creando usuario admin...")
 try:

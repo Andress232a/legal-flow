@@ -38,5 +38,8 @@ cursor.close()
 conn.close()
 
 print("Ejecutando migraciones...")
-call_command('migrate', '--noinput', verbosity=2)
-print("✓ Migraciones completadas")
+try:
+    call_command('migrate', '--noinput', verbosity=2)
+    print("✓ Migraciones completadas")
+except Exception as e:
+    print(f"⚠ Error migraciones (continuando): {e}")
