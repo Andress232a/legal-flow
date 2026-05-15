@@ -33,7 +33,6 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "users"
         ordering = ["-created_at"]
         verbose_name = "Usuario"
         verbose_name_plural = "Usuarios"
