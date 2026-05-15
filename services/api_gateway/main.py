@@ -15,14 +15,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-insecure-secret-key-change-me")
 
-UPSTREAM_IAM = os.environ.get("UPSTREAM_IAM", "http://iam_service:8001/api")
-UPSTREAM_DOCUMENT = os.environ.get("UPSTREAM_DOCUMENT", "http://document_service:8002/api")
-UPSTREAM_MATTER = os.environ.get("UPSTREAM_MATTER", "http://matter_service:8003/api")
-UPSTREAM_TIME = os.environ.get("UPSTREAM_TIME", "http://time_tracking_service:8004/api")
-UPSTREAM_BILLING = os.environ.get("UPSTREAM_BILLING", "http://billing_service:8005/api")
-UPSTREAM_CALENDAR = os.environ.get("UPSTREAM_CALENDAR", "http://calendar_service:8006/api")
-UPSTREAM_ANALYTICS = os.environ.get("UPSTREAM_ANALYTICS", "http://analytics_service:8007/api")
-UPSTREAM_PORTAL = os.environ.get("UPSTREAM_PORTAL", "http://client_portal_service:8008/api")
+UPSTREAM_IAM = os.environ.get("IAM_SERVICE_URL", "http://iam_service:8001/api")
+UPSTREAM_DOCUMENT = os.environ.get("DOCUMENT_SERVICE_URL", "http://document_service:8002/api")
+UPSTREAM_MATTER = os.environ.get("MATTER_SERVICE_URL", "http://matter_service:8003/api")
+UPSTREAM_TIME = os.environ.get("TIME_SERVICE_URL", "http://time_tracking_service:8004/api")
+UPSTREAM_BILLING = os.environ.get("BILLING_SERVICE_URL", "http://billing_service:8005/api")
+UPSTREAM_CALENDAR = os.environ.get("CALENDAR_SERVICE_URL", "http://calendar_service:8006/api")
+UPSTREAM_ANALYTICS = os.environ.get("ANALYTICS_SERVICE_URL", "http://analytics_service:8007/api")
+UPSTREAM_PORTAL = os.environ.get("PORTAL_SERVICE_URL", "http://client_portal_service:8008/api")
 
 # Prefijos entrantes (sin / inicial) → base upstream, orden: más específicos primero
 ROUTE_PREFIXES: list[tuple[str, str]] = [
