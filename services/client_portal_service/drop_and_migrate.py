@@ -18,16 +18,22 @@ db_name = db_config.get('NAME')
 print("Cerrando conexiones Django...")
 connections.close_all()
 
-print("Borrando y recreando base de datos...")
+print("Borrando tablas...")
 conn = MySQLdb.connect(
     host=db_host,
     user=db_user,
     passwd=db_password,
+    database=db_name,
     charset='utf8mb4'
 )
 cursor = conn.cursor()
-cursor.execute(f"DROP DATABASE IF EXISTS `{db_name}`")
-cursor.execute(f"CREATE DATABASE `{db_name}`")
+cursor.execute("SET FOREIGN_KEY_CHECKS=0")
+cursor.execute("SHOW TABLES")
+tables = [row[0] for row in cursor.fetchall()]
+for table in tables:
+    cursor.execute(f"DROP TABLE IF EXISTS `{table}`")
+    print(f"✓ Tabla borrada: {table}")
+cursor.execute("SET FOREIGN_KEY_CHECKS=1")
 cursor.close()
 conn.close()
 
