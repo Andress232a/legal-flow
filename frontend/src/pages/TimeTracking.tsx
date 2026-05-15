@@ -12,7 +12,6 @@ import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { timeTrackingApi } from '../api/timeTracking';
 import { casesApi } from '../api/cases';
-import { useAuth } from '../context/AuthContext';
 import type { TimeEntry, Timer as TimerType, TimeStats, Case } from '../types';
 
 // ─── Mappings ─────────────────────────────────────────────────────────────────
@@ -330,7 +329,6 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function TimeTracking() {
-  const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [stats, setStats] = useState<TimeStats | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimerType | null>(null);

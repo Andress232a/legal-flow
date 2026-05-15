@@ -55,7 +55,7 @@ export default function ClientPortal() {
           casesApi.list().catch(() => ({ results: [] })),
           billingApi.list().catch(() => ({ results: [] })),
           documentsApi.list().catch(() => ({ results: [] })),
-          timeTrackingApi.list().catch(() => ({ results: [] })),
+          timeTrackingApi.listEntries().catch(() => ({ results: [] })),
         ]);
         setCases(Array.isArray(casesRes?.results) ? casesRes.results : []);
         setInvoices(Array.isArray(invRes?.results) ? invRes.results : []);
