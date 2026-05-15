@@ -331,8 +331,6 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 
 export default function TimeTracking() {
   const { user: authUser } = useAuth();
-  const userType = authUser?.user_type ?? 'assistant';
-  const isAdmin = userType === 'admin';
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [stats, setStats] = useState<TimeStats | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimerType | null>(null);
@@ -343,7 +341,6 @@ export default function TimeTracking() {
   const [showLogEntry, setShowLogEntry] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 20;
 
   const loadAll = useCallback(async () => {
