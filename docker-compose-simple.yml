@@ -40,6 +40,7 @@ services:
       - .env
     environment:
       - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://legal-flow-delta.vercel.app,http://localhost:5173}
       - IAM_SERVICE_URL=http://iam_service:8001/api
       - DOCUMENT_SERVICE_URL=http://document_service:8002/api
       - MATTER_SERVICE_URL=http://matter_service:8003/api
