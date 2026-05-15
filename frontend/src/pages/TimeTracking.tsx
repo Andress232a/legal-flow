@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Clock, Play, Pause, Square, Trash2, Plus, Search,
   RefreshCw, Timer, Briefcase, CheckCircle, DollarSign,
   X, FileText, Users, Gavel, BookOpen,
-  Coffee, Car, Wrench,
+  Coffee, Car, Wrench, MoreHorizontal, Scale,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -330,7 +330,9 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function TimeTracking() {
-  useAuth();
+  const { user: authUser } = useAuth();
+  const userType = authUser?.user_type ?? 'assistant';
+  const isAdmin = userType === 'admin';
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [stats, setStats] = useState<TimeStats | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimerType | null>(null);
@@ -341,6 +343,7 @@ export default function TimeTracking() {
   const [showLogEntry, setShowLogEntry] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 20;
 
   const loadAll = useCallback(async () => {
@@ -370,36 +373,44 @@ export default function TimeTracking() {
 
   const handlePause = async () => {
     if (!activeTimer) return;
+    setActionLoading(true);
     try {
       const updated = await timeTrackingApi.pauseTimer(activeTimer.id);
       setActiveTimer(updated);
     } catch { /* ignore */ }
+    setActionLoading(false);
   };
 
   const handleResume = async () => {
     if (!activeTimer) return;
+    setActionLoading(true);
     try {
       const updated = await timeTrackingApi.resumeTimer(activeTimer.id);
       setActiveTimer(updated);
     } catch { /* ignore */ }
+    setActionLoading(false);
   };
 
   const handleStop = async () => {
     if (!activeTimer) return;
+    setActionLoading(true);
     try {
       await timeTrackingApi.stopTimer(activeTimer.id);
       setActiveTimer(null);
       await loadAll();
     } catch { /* ignore */ }
+    setActionLoading(false);
   };
 
   const handleDiscard = async () => {
     if (!activeTimer) return;
     if (!window.confirm('¿Descartar el temporizador? No se guardará el tiempo.')) return;
+    setActionLoading(true);
     try {
       await timeTrackingApi.discardTimer(activeTimer.id);
       setActiveTimer(null);
     } catch { /* ignore */ }
+    setActionLoading(false);
   };
 
   const handleDelete = async (id: string) => {

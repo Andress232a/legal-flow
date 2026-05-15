@@ -2,9 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-/** En Docker: servicio `api_gateway`. En local: localhost. */
+/** En Docker (Windows/Mac): host.docker.internal. En local: localhost. */
 const apiHost = process.env.LEGALFLOW_API_HOST ?? 'localhost'
-const gatewayPort = process.env.LEGALFLOW_GATEWAY_PORT ?? '8080'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -12,9 +11,35 @@ export default defineConfig({
     port: 3000,
     host: true,
     proxy: {
-      '/api': {
-        target: `http://${apiHost}:${gatewayPort}`,
+      '/api/iam': {
+        target: `http://${apiHost}:8001`,
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/iam/, '/api'),
+      },
+      '/api/docs-service': {
+        target: `http://${apiHost}:8002`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/docs-service/, '/api'),
+      },
+      '/api/matters-service': {
+        target: `http://${apiHost}:8003`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/matters-service/, '/api'),
+      },
+      '/api/time-service': {
+        target: `http://${apiHost}:8004`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/time-service/, '/api'),
+      },
+      '/api/billing-service': {
+        target: `http://${apiHost}:8005`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/billing-service/, '/api'),
+      },
+      '/api/calendar-service': {
+        target: `http://${apiHost}:8006`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/calendar-service/, '/api'),
       },
     },
   },
