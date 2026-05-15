@@ -15,5 +15,5 @@ with connection.cursor() as cursor:
     cursor.execute("TRUNCATE TABLE `django_migrations`")
 
 print("Ejecutando migraciones...")
-call_command('migrate', '--noinput', verbosity=2)
+call_command('migrate', '--noinput', '--fake-initial', verbosity=2)
 print("✓ Migraciones completadas")
