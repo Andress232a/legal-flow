@@ -330,7 +330,7 @@ function LogEntryModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function TimeTracking() {
-  const { user: authUser } = useAuth();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [stats, setStats] = useState<TimeStats | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimerType | null>(null);
@@ -370,44 +370,36 @@ export default function TimeTracking() {
 
   const handlePause = async () => {
     if (!activeTimer) return;
-    setActionLoading(true);
     try {
       const updated = await timeTrackingApi.pauseTimer(activeTimer.id);
       setActiveTimer(updated);
     } catch { /* ignore */ }
-    setActionLoading(false);
   };
 
   const handleResume = async () => {
     if (!activeTimer) return;
-    setActionLoading(true);
     try {
       const updated = await timeTrackingApi.resumeTimer(activeTimer.id);
       setActiveTimer(updated);
     } catch { /* ignore */ }
-    setActionLoading(false);
   };
 
   const handleStop = async () => {
     if (!activeTimer) return;
-    setActionLoading(true);
     try {
       await timeTrackingApi.stopTimer(activeTimer.id);
       setActiveTimer(null);
       await loadAll();
     } catch { /* ignore */ }
-    setActionLoading(false);
   };
 
   const handleDiscard = async () => {
     if (!activeTimer) return;
     if (!window.confirm('¿Descartar el temporizador? No se guardará el tiempo.')) return;
-    setActionLoading(true);
     try {
       await timeTrackingApi.discardTimer(activeTimer.id);
       setActiveTimer(null);
     } catch { /* ignore */ }
-    setActionLoading(false);
   };
 
   const handleDelete = async (id: string) => {
