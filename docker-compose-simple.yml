@@ -1,0 +1,214 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api_gateway:
+    build:
+      context: ./services/api_gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-insecure-secret-key-change-me}
+      - IAM_SERVICE_URL=http://iam_service:8001/api
+      - DOCUMENT_SERVICE_URL=http://document_service:8002/api
+      - MATTER_SERVICE_URL=http://matter_service:8003/api
+      - TIME_SERVICE_URL=http://time_tracking_service:8004/api
+      - BILLING_SERVICE_URL=http://billing_service:8005/api
+      - CALENDAR_SERVICE_URL=http://calendar_service:8006/api
+      - ANALYTICS_SERVICE_URL=http://analytics_service:8007/api
+      - PORTAL_SERVICE_URL=http://client_portal_service:8008/api
+    depends_on:
+      - iam_service
+    ports:
+      - "8080:8080"
+
+  iam_service:
+    build:
+      context: ./services/iam_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${IAM_DB_NAME:-legalflow_iam}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  document_service:
+    build:
+      context: ./services/document_service
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${DOC_DB_NAME:-legalflow_documents}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  matter_service:
+    build:
+      context: ./services/matter_service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${MATTER_DB_NAME:-legalflow_matters}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  time_tracking_service:
+    build:
+      context: ./services/time_tracking_service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${TIMETRACKING_DB_NAME:-legalflow_timetracking}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  billing_service:
+    build:
+      context: ./services/billing_service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${BILLING_DB_NAME:-legalflow_billing}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  calendar_service:
+    build:
+      context: ./services/calendar_service
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8006"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${CALENDAR_DB_NAME:-legalflow_calendar}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  analytics_service:
+    build:
+      context: ./services/analytics_service
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${ANALYTICS_DB_NAME:-legalflow_analytics}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  client_portal_service:
+    build:
+      context: ./services/client_portal_service
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${PORTAL_DB_NAME:-legalflow_portal}
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+    command: >
+      sh -c "(npm ci || npm install) && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api_gateway
+
+volumes:
+  mysql_data:
+  frontend_node_modules:
