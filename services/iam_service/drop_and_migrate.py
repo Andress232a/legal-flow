@@ -9,11 +9,11 @@ from django.db import connections
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-db_config = settings.DATABASES['default']
-db_host = db_config['HOST']
-db_user = db_config['USER']
-db_password = db_config['PASSWORD']
-db_name = db_config['NAME']
+# Usar env vars directamente (Railway tiene valores diferentes a docker-compose)
+db_host = os.environ.get('IAM_DB_HOST') or os.environ.get('DATABASE_HOST', 'localhost')
+db_user = os.environ.get('IAM_DB_USER') or os.environ.get('DATABASE_USER', 'root')
+db_password = os.environ.get('IAM_DB_PASSWORD') or os.environ.get('DATABASE_PASSWORD', '')
+db_name = os.environ.get('IAM_DB_NAME') or os.environ.get('DATABASE_NAME', 'legalflow_iam')
 
 print("Cerrando conexiones Django...")
 connections.close_all()
