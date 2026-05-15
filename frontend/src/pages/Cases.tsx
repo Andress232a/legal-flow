@@ -1,3 +1,4 @@
+// Fix vercel deployment
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Scale, Plus, Search, RefreshCw, X, AlertTriangle, Clock,
