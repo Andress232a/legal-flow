@@ -59,11 +59,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${IAM_DB_NAME:-legalflow_iam}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - IAM_DB_NAME=${IAM_DB_NAME:-legalflow_iam}
+      - IAM_DB_USER=root
+      - IAM_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - IAM_DB_HOST=mysql
+      - IAM_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -77,11 +77,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${DOC_DB_NAME:-legalflow_documents}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - DOC_DB_NAME=${DOC_DB_NAME:-legalflow_documents}
+      - DOC_DB_USER=root
+      - DOC_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - DOC_DB_HOST=mysql
+      - DOC_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -95,11 +95,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${MATTER_DB_NAME:-legalflow_matters}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - MATTER_DB_NAME=${MATTER_DB_NAME:-legalflow_matters}
+      - MATTER_DB_USER=root
+      - MATTER_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - MATTER_DB_HOST=mysql
+      - MATTER_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -113,11 +113,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${TIMETRACKING_DB_NAME:-legalflow_timetracking}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - TIMETRACKING_DB_NAME=${TIMETRACKING_DB_NAME:-legalflow_timetracking}
+      - TIMETRACKING_DB_USER=root
+      - TIMETRACKING_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - TIMETRACKING_DB_HOST=mysql
+      - TIMETRACKING_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -131,11 +131,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${BILLING_DB_NAME:-legalflow_billing}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - BILLING_DB_NAME=${BILLING_DB_NAME:-legalflow_billing}
+      - BILLING_DB_USER=root
+      - BILLING_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - BILLING_DB_HOST=mysql
+      - BILLING_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -149,11 +149,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${CALENDAR_DB_NAME:-legalflow_calendar}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - CALENDAR_DB_NAME=${CALENDAR_DB_NAME:-legalflow_calendar}
+      - CALENDAR_DB_USER=root
+      - CALENDAR_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - CALENDAR_DB_HOST=mysql
+      - CALENDAR_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -167,11 +167,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${ANALYTICS_DB_NAME:-legalflow_analytics}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - ANALYTICS_DB_NAME=${ANALYTICS_DB_NAME:-legalflow_analytics}
+      - ANALYTICS_DB_USER=root
+      - ANALYTICS_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - ANALYTICS_DB_HOST=mysql
+      - ANALYTICS_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
@@ -185,11 +185,11 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_NAME=${PORTAL_DB_NAME:-legalflow_portal}
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
+      - PORTAL_DB_NAME=${PORTAL_DB_NAME:-legalflow_portal}
+      - PORTAL_DB_USER=root
+      - PORTAL_DB_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_secret}
+      - PORTAL_DB_HOST=mysql
+      - PORTAL_DB_PORT=3306
     depends_on:
       mysql:
         condition: service_healthy
